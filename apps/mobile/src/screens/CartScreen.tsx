@@ -5,8 +5,8 @@ import { colors, typography, spacing } from '../theme';
 export default function CartScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Shopping Bag</Text>
       <View style={styles.empty}>
+        <Text style={{ fontSize: 40, marginBottom: 12 }}>🛍️</Text>
         <Text style={styles.emptyTitle}>Your bag is empty</Text>
         <Text style={styles.emptySubtitle}>
           Explore our curated collection of handwoven Sambalpuri sarees.
@@ -19,12 +19,8 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     padding: spacing.lg,
-  },
-  title: {
-    ...typography.h1,
-    marginBottom: spacing.md,
   },
   empty: {
     flex: 1,
@@ -33,11 +29,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   emptyTitle: {
-    ...typography.h3,
+    ...typography.headlineMd,
     marginBottom: spacing.sm,
   },
   emptySubtitle: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     textAlign: 'center',
   },
 });

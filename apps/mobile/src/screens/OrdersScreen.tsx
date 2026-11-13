@@ -5,8 +5,8 @@ import { colors, typography, spacing } from '../theme';
 export default function OrdersScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Orders</Text>
       <View style={styles.empty}>
+        <Text style={{ fontSize: 40, marginBottom: 12 }}>📋</Text>
         <Text style={styles.emptyTitle}>No orders yet</Text>
         <Text style={styles.emptySubtitle}>
           Your handloom journey begins with your first order.
@@ -19,12 +19,8 @@ export default function OrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     padding: spacing.lg,
-  },
-  title: {
-    ...typography.h1,
-    marginBottom: spacing.md,
   },
   empty: {
     flex: 1,
@@ -33,11 +29,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   emptyTitle: {
-    ...typography.h3,
+    ...typography.headlineMd,
     marginBottom: spacing.sm,
   },
   emptySubtitle: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     textAlign: 'center',
   },
 });

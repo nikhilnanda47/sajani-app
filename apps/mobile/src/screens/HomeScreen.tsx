@@ -1,11 +1,22 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius, elevation } from '../theme';
+import { getProducts, formatPaise, getLowestPrice, getComparePrice, type Product } from '../services/api';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - spacing.margin * 2 - spacing.gutter) / 2;
 
 export default function HomeScreen() {
+  const navigation = useNavigation<any>();
+  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+
+  useEffect(() => {
+    getProducts({ limit: '4', sortBy: 'newest' })
+      .then((data) => setNewArrivals(data.items || []))
+      .catch(() => {});
+  }, []);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Hero Section */}
@@ -23,9 +34,9 @@ export default function HomeScreen() {
             Authentic Sambalpuri Bandha & Bomkai Silk, steeped in poetic Odisha craft tradition.
           </Text>
           <View style={styles.heroCta}>
-            <View style={styles.heroButton}>
+            <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate('Explore')}>
               <Text style={styles.heroButtonText}>EXPLORE MASTERPIECES</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -72,10 +83,50 @@ export default function HomeScreen() {
       {/* New Arrivals */}
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>FRESH OFF THE LOOM</Text>
-        <Text style={styles.sectionTitle}>New Arrivals</Text>
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>Product cards will populate from API in Session B</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>New Arrivals</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Explore')}>
+            <Text style={styles.viewAll}>View All →</Text>
+          </TouchableOpacity>
         </View>
+        {newArrivals.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.arrivalsScroll}>
+            {newArrivals.map((product) => {
+              const price = getLowestPrice(product.variants || []);
+              const compare = getComparePrice(product.variants || []);
+              return (
+                <TouchableOpacity
+                  key={product.id}
+                  style={styles.arrivalCard}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate('Explore', {
+                    screen: 'ProductDetail',
+                    params: { slug: product.slug },
+                  })}
+                >
+                  <View style={styles.arrivalImage}>
+                    <Text style={{ fontSize: 24 }}>🧶</Text>
+                    <Text style={styles.arrivalFabric}>{product.fabric || 'Handloom'}</Text>
+                  </View>
+                  <View style={styles.arrivalMeta}>
+                    <Text style={styles.arrivalCategory}>{product.category?.name?.toUpperCase()}</Text>
+                    <Text style={styles.arrivalTitle} numberOfLines={1}>{product.title}</Text>
+                    <View style={styles.arrivalPriceRow}>
+                      <Text style={styles.arrivalPrice}>{formatPaise(price)}</Text>
+                      {compare && compare > price && (
+                        <Text style={styles.arrivalCompare}>{formatPaise(compare)}</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderText}>Loading new arrivals...</Text>
+          </View>
+        )}
       </View>
 
       {/* Authenticity Section */}
@@ -263,6 +314,59 @@ const styles = StyleSheet.create({
     ...typography.headlineMd,
     fontSize: 17,
     color: colors.white,
+  },
+
+  // ── New Arrivals Scroll ──
+  arrivalsScroll: {
+    paddingTop: spacing.md,
+    gap: spacing.gutter,
+  },
+  arrivalCard: {
+    width: 160,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    ...elevation.raised,
+  },
+  arrivalImage: {
+    width: '100%',
+    height: 180,
+    backgroundColor: colors.surfaceContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  arrivalFabric: {
+    ...typography.labelSm,
+    color: colors.onSurfaceVariant,
+    marginTop: 4,
+  },
+  arrivalMeta: {
+    padding: 10,
+  },
+  arrivalCategory: {
+    ...typography.labelSm,
+    color: colors.secondary,
+    marginBottom: 2,
+  },
+  arrivalTitle: {
+    ...typography.headlineMd,
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.primary,
+  },
+  arrivalPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    marginTop: 6,
+  },
+  arrivalPrice: {
+    ...typography.currencyMd,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  arrivalCompare: {
+    ...typography.currencyStrike,
   },
 
   // ── Placeholder ──

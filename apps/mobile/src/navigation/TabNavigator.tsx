@@ -1,15 +1,48 @@
 // @ts-nocheck
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, elevation } from '../theme';
 import HomeScreen from '../screens/HomeScreen';
 import ExploreScreen from '../screens/ExploreScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
 import CartScreen from '../screens/CartScreen';
 import OrdersScreen from '../screens/OrdersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
+const ExploreStack = createNativeStackNavigator();
+
+// Explore tab has its own stack: Explore → ProductDetail
+function ExploreStackScreen() {
+  return (
+    <ExploreStack.Navigator>
+      <ExploreStack.Screen
+        name="ExploreList"
+        component={ExploreScreen}
+        options={{ headerShown: false }}
+      />
+      <ExploreStack.Screen
+        name="ProductDetail"
+        component={ProductDetailScreen}
+        options={{
+          headerTitle: 'Product Details',
+          headerStyle: {
+            backgroundColor: colors.surface,
+          },
+          headerTintColor: colors.primary,
+          headerTitleStyle: {
+            fontWeight: '600',
+            fontSize: 16,
+          },
+          headerShadowVisible: false,
+          headerBackTitle: 'Back',
+        }}
+      />
+    </ExploreStack.Navigator>
+  );
+}
 
 export default function TabNavigator() {
   return (
@@ -53,7 +86,11 @@ export default function TabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerTitle: 'Sajani' }} />
-      <Tab.Screen name="Explore" component={ExploreScreen} />
+      <Tab.Screen
+        name="Explore"
+        component={ExploreStackScreen}
+        options={{ headerShown: false }}
+      />
       <Tab.Screen name="Cart" component={CartScreen} />
       <Tab.Screen name="Orders" component={OrdersScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
