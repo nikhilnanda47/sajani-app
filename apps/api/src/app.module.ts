@@ -4,6 +4,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { ProductsModule } from './modules/products/products.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -31,6 +33,8 @@ import { HealthController } from './health.controller';
 
     // Feature modules
     AuthModule,
+    CategoriesModule,
+    ProductsModule,
     // UsersModule,
     // AddressesModule,
     // CategoriesModule,
