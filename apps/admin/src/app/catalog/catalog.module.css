@@ -1,0 +1,119 @@
+.layout { display: flex; min-height: 100vh; }
+.main { flex: 1; display: flex; flex-direction: column; }
+
+.header {
+  background: var(--white);
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h2 { font-size: 1.25rem; font-weight: 600; margin: 0; }
+.count { font-size: 0.8rem; color: var(--grey); }
+
+.addBtn {
+  padding: 0.5rem 1.25rem;
+  background: var(--maroon);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toolbar {
+  padding: 0.75rem 2rem;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+
+.filterGroup { display: flex; gap: 0.25rem; }
+
+.filterBtn, .filterActive {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  background: var(--white);
+  cursor: pointer;
+  color: var(--grey);
+}
+
+.filterActive {
+  background: var(--maroon);
+  color: white;
+  border-color: var(--maroon);
+  font-weight: 600;
+}
+
+.content { padding: 1.5rem 2rem; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--white);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--grey);
+  border-bottom: 1px solid var(--border);
+  background: #fafafa;
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.productCell { display: flex; flex-direction: column; gap: 0.15rem; }
+.slug { color: var(--grey); font-family: monospace; font-size: 0.75rem; }
+.price { font-family: monospace; font-weight: 500; }
+
+.lowStock { color: #c62828; font-weight: 600; }
+
+.badgePublished, .badgeDraft {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badgePublished { background: #e8f5e9; color: #2e7d32; }
+.badgeDraft { background: #fff3e0; color: #e65100; }
+
+.actions { white-space: nowrap; }
+
+.actionBtn {
+  padding: 0.3rem 0.75rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--charcoal);
+  cursor: pointer;
+}
+
+.actionBtn:hover { border-color: var(--maroon); color: var(--maroon); }
+
+.empty {
+  text-align: center;
+  padding: 3rem 1rem !important;
+  color: var(--grey);
+}
