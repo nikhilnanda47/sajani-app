@@ -1,0 +1,32 @@
+:root {
+  --maroon: #6B1D2A;
+  --maroon-light: #8A2E3C;
+  --ivory: #F5F0E8;
+  --charcoal: #2D2D2D;
+  --gold: #C4A265;
+  --terracotta: #C67B4B;
+  --grey: #8E8E93;
+  --grey-light: #F2F2F7;
+  --border: #E5E5EA;
+  --white: #FFFFFF;
+  --success: #34C759;
+  --warning: #FF9500;
+  --error: #FF3B30;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--charcoal);
+  background-color: var(--grey-light);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

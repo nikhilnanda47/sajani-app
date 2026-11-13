@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// 1. USERS
+// ─────────────────────────────────────────────
+model User {
+  id         String    @id @default(uuid()) @db.Uuid
+  phone      String    @unique @db.VarChar(15)
+  name       String?   @db.VarChar(100)
+  email      String?   @unique @db.VarChar(255)
+  verifiedAt DateTime? @map("verified_at") @db.Timestamptz()
+  status     String    @default("active") @db.VarChar(20)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  addresses Address[]
+  cartItems CartItem[]
+  orders    Order[]
+
+  @@index([status])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// 2. ADDRESSES
+// ─────────────────────────────────────────────
+model Address {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  label          String?  @db.VarChar(50)
+  recipientName  String   @map("recipient_name") @db.VarChar(100)
+  recipientPhone String   @map("recipient_phone") @db.VarChar(15)
+  line1          String   @db.VarChar(255)
+  line2          String?  @db.VarChar(255)
+  landmark       String?  @db.VarChar(255)
+  city           String   @db.VarChar(100)
+  district       String   @db.VarChar(100)
+  state          String   @default("Odisha") @db.VarChar(100)
+  pinCode        String   @map("pin_code") @db.VarChar(6)
+  isDefault      Boolean  @default(false) @map("is_default")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([pinCode])
+  @@map("addresses")
+}
+
+// ─────────────────────────────────────────────
+// 3. CATEGORIES
+// ─────────────────────────────────────────────
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  imageUrl    String?  @map("image_url") @db.VarChar(500)
+  sortOrder   Int      @default(0) @map("sort_order")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  products Product[]
+
+  @@index([active, sortOrder])
+  @@map("categories")
+}
+
+// ─────────────────────────────────────────────
+// 4. PRODUCTS
+// ─────────────────────────────────────────────
+model Product {
+  id               String   @id @default(uuid()) @db.Uuid
+  slug             String   @unique @db.VarChar(200)
+  title            String   @db.VarChar(255)
+  description      String?  @db.Text
+  shortDescription String?  @map("short_description") @db.VarChar(500)
+  categoryId       String   @map("category_id") @db.Uuid
+  publishStatus    String   @default("draft") @map("publish_status") @db.VarChar(20)
+  fabric           String?  @db.VarChar(100)
+  weaveMethod      String?  @map("weave_method") @db.VarChar(100)
+  origin           String?  @db.VarChar(200)
+  careInstructions String?  @map("care_instructions") @db.Text
+  blousePiece      String?  @map("blouse_piece") @db.VarChar(100)
+  length           String?  @db.VarChar(50)
+  width            String?  @db.VarChar(50)
+  weight           String?  @db.VarChar(50)
+  occasion         String[] @default([])
+  tags             String[] @default([])
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  category Category        @relation(fields: [categoryId], references: [id])
+  variants ProductVariant[]
+  media    ProductMedia[]
+
+  @@index([categoryId])
+  @@index([publishStatus])
+  @@index([fabric])
+  @@index([weaveMethod])
+  @@map("products")
+}
+
+// ─────────────────────────────────────────────
+// 5. PRODUCT VARIANTS
+// ─────────────────────────────────────────────
+model ProductVariant {
+  id             String   @id @default(uuid()) @db.Uuid
+  productId      String   @map("product_id") @db.Uuid
+  sku            String   @unique @db.VarChar(50)
+  name           String?  @db.VarChar(100)
+  color          String?  @db.VarChar(50)
+  attributes     Json?    @db.JsonB
+  pricePaise     Int      @map("price_paise")
+  compareAtPaise Int?     @map("compare_at_paise")
+  active         Boolean  @default(true)
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  product      Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory    Inventory?
+  reservations InventoryReservation[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  media        ProductMedia[]
+
+  @@index([productId])
+  @@index([active])
+  @@index([pricePaise])
+  @@index([color])
+  @@map("product_variants")
+}
+
+// ─────────────────────────────────────────────
+// 6. PRODUCT MEDIA
+// ─────────────────────────────────────────────
+model ProductMedia {
+  id           String   @id @default(uuid()) @db.Uuid
+  productId    String   @map("product_id") @db.Uuid
+  variantId    String?  @map("variant_id") @db.Uuid
+  objectKey    String   @map("object_key") @db.VarChar(500)
+  thumbnailKey String?  @map("thumbnail_key") @db.VarChar(500)
+  type         String   @db.VarChar(20) // image, video
+  mimeType     String   @map("mime_type") @db.VarChar(50)
+  altText      String?  @map("alt_text") @db.VarChar(255)
+  width        Int?
+  height       Int?
+  sizeBytes    Int?     @map("size_bytes")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([productId, sortOrder])
+  @@index([variantId])
+  @@map("product_media")
+}
+
+// ─────────────────────────────────────────────
+// 7. INVENTORY
+// ─────────────────────────────────────────────
+model Inventory {
+  variantId   String   @id @map("variant_id") @db.Uuid
+  onHand      Int      @default(0) @map("on_hand")
+  reserved    Int      @default(0)
+  unavailable Int      @default(0)
+  version     Int      @default(1)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@map("inventory")
+}
+
+// ─────────────────────────────────────────────
+// 8. INVENTORY RESERVATIONS
+// ─────────────────────────────────────────────
+model InventoryReservation {
+  id        String   @id @default(uuid()) @db.Uuid
+  variantId String   @map("variant_id") @db.Uuid
+  orderId   String?  @map("order_id") @db.Uuid
+  qty       Int
+  status    String   @default("held") @db.VarChar(20) // held, committed, released, expired
+  expiresAt DateTime @map("expires_at") @db.Timestamptz()
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+  order   Order?         @relation(fields: [orderId], references: [id])
+
+  @@index([variantId])
+  @@index([orderId])
+  @@index([status, expiresAt])
+  @@map("inventory_reservations")
+}
+
+// ─────────────────────────────────────────────
+// 9. CART ITEMS
+// ─────────────────────────────────────────────
+model CartItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  variantId String   @map("variant_id") @db.Uuid
+  quantity  Int      @default(1)
+  addedAt   DateTime @default(now()) @map("added_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([userId, variantId])
+  @@index([userId])
+  @@map("cart_items")
+}
+
+// ─────────────────────────────────────────────
+// 10. ORDERS
+// ─────────────────────────────────────────────
+model Order {
+  id                 String    @id @default(uuid()) @db.Uuid
+  publicNumber       String    @unique @map("public_number") @db.VarChar(20)
+  userId             String    @map("user_id") @db.Uuid
+  status             String    @default("placed") @db.VarChar(30)
+  paymentMode        String    @map("payment_mode") @db.VarChar(20) // upi, cod
+  paymentStatus      String    @default("pending") @map("payment_status") @db.VarChar(20)
+  subtotalPaise      Int       @map("subtotal_paise")
+  discountPaise      Int       @default(0) @map("discount_paise")
+  shippingPaise      Int       @map("shipping_paise")
+  taxPaise           Int       @map("tax_paise")
+  totalPaise         Int       @map("total_paise")
+  addressSnapshot    Json      @map("address_snapshot") @db.JsonB
+  notes              String?   @db.Text
+  idempotencyKey     String    @unique @map("idempotency_key") @db.VarChar(100)
+  confirmedAt        DateTime? @map("confirmed_at") @db.Timestamptz()
+  packedAt           DateTime? @map("packed_at") @db.Timestamptz()
+  shippedAt          DateTime? @map("shipped_at") @db.Timestamptz()
+  deliveredAt        DateTime? @map("delivered_at") @db.Timestamptz()
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz()
+  cancellationReason String?   @map("cancellation_reason") @db.VarChar(255)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user         User                   @relation(fields: [userId], references: [id])
+  items        OrderItem[]
+  payments     Payment[]
+  shipments    Shipment[]
+  returns      Return[]
+  refunds      Refund[]
+  reservations InventoryReservation[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+// ─────────────────────────────────────────────
+// 11. ORDER ITEMS
+// ─────────────────────────────────────────────
+model OrderItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  orderId         String   @map("order_id") @db.Uuid
+  variantId       String   @map("variant_id") @db.Uuid
+  productTitle    String   @map("product_title") @db.VarChar(255)
+  variantName     String?  @map("variant_name") @db.VarChar(100)
+  sku             String   @db.VarChar(50)
+  qty             Int
+  unitPricePaise  Int      @map("unit_price_paise")
+  taxPaise        Int      @default(0) @map("tax_paise")
+  totalPaise      Int      @map("total_paise")
+  productImageUrl String?  @map("product_image_url") @db.VarChar(500)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+  returns Return[]
+
+  @@index([orderId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+// ─────────────────────────────────────────────
+// 12. PAYMENTS
+// ─────────────────────────────────────────────
+model Payment {
+  id                String    @id @default(uuid()) @db.Uuid
+  orderId           String    @map("order_id") @db.Uuid
+  gateway           String    @db.VarChar(50)
+  providerOrderId   String?   @map("provider_order_id") @db.VarChar(100)
+  providerPaymentId String?   @map("provider_payment_id") @db.VarChar(100)
+  method            String?   @db.VarChar(30)
+  amountPaise       Int       @map("amount_paise")
+  currency          String    @default("INR") @db.VarChar(3)
+  status            String    @default("pending") @db.VarChar(20)
+  failureReason     String?   @map("failure_reason") @db.VarChar(255)
+  paidAt            DateTime? @map("paid_at") @db.Timestamptz()
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  order   Order    @relation(fields: [orderId], references: [id])
+  refunds Refund[]
+
+  @@index([orderId])
+  @@index([providerOrderId])
+  @@index([providerPaymentId])
+  @@index([status])
+  @@map("payments")
+}
+
+// ─────────────────────────────────────────────
+// 13. SHIPMENTS
+// ─────────────────────────────────────────────
+model Shipment {
+  id                String    @id @default(uuid()) @db.Uuid
+  orderId           String    @map("order_id") @db.Uuid
+  carrier           String?   @db.VarChar(100)
+  trackingId        String?   @map("tracking_id") @db.VarChar(100)
+  trackingUrl       String?   @map("tracking_url") @db.VarChar(500)
+  status            String    @default("pending") @db.VarChar(30)
+  estimatedDelivery DateTime? @map("estimated_delivery") @db.Date
+  dispatchedAt      DateTime? @map("dispatched_at") @db.Timestamptz()
+  deliveredAt       DateTime? @map("delivered_at") @db.Timestamptz()
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([trackingId])
+  @@index([status])
+  @@map("shipments")
+}
+
+// ─────────────────────────────────────────────
+// 14. RETURNS
+// ─────────────────────────────────────────────
+model Return {
+  id           String    @id @default(uuid()) @db.Uuid
+  orderId      String    @map("order_id") @db.Uuid
+  orderItemId  String    @map("order_item_id") @db.Uuid
+  qty          Int
+  reason       String    @db.VarChar(255)
+  reasonDetail String?   @map("reason_detail") @db.Text
+  status       String    @default("requested") @db.VarChar(30)
+  adminNotes   String?   @map("admin_notes") @db.Text
+  requestedAt  DateTime  @default(now()) @map("requested_at") @db.Timestamptz()
+  resolvedAt   DateTime? @map("resolved_at") @db.Timestamptz()
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  order     Order      @relation(fields: [orderId], references: [id])
+  orderItem OrderItem  @relation(fields: [orderItemId], references: [id])
+  refunds   Refund[]
+
+  @@index([orderId])
+  @@index([status])
+  @@map("returns")
+}
+
+// ─────────────────────────────────────────────
+// 15. REFUNDS
+// ─────────────────────────────────────────────
+model Refund {
+  id              String   @id @default(uuid()) @db.Uuid
+  orderId         String   @map("order_id") @db.Uuid
+  returnId        String?  @map("return_id") @db.Uuid
+  paymentId       String   @map("payment_id") @db.Uuid
+  gatewayRefundId String?  @map("gateway_refund_id") @db.VarChar(100)
+  amountPaise     Int      @map("amount_paise")
+  status          String   @default("pending") @db.VarChar(20)
+  reason          String?  @db.VarChar(255)
+  initiatedBy     String   @map("initiated_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  order     Order      @relation(fields: [orderId], references: [id])
+  return    Return?    @relation(fields: [returnId], references: [id])
+  payment   Payment    @relation(fields: [paymentId], references: [id])
+  initiator AdminUser  @relation(fields: [initiatedBy], references: [id])
+
+  @@index([orderId])
+  @@index([returnId])
+  @@index([paymentId])
+  @@index([gatewayRefundId])
+  @@index([status])
+  @@map("refunds")
+}
+
+// ─────────────────────────────────────────────
+// 16. ADMIN USERS
+// ─────────────────────────────────────────────
+model AdminUser {
+  id          String    @id @default(uuid()) @db.Uuid
+  phone       String    @unique @db.VarChar(15)
+  name        String    @db.VarChar(100)
+  email       String?   @db.VarChar(255)
+  role        String    @db.VarChar(30) // owner, catalog_editor, fulfillment_operator, support
+  status      String    @default("active") @db.VarChar(20)
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz()
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  refunds Refund[]
+
+  @@index([role])
+  @@index([status])
+  @@map("admin_users")
+}
+
+// ─────────────────────────────────────────────
+// 17. AUDIT EVENTS
+// ─────────────────────────────────────────────
+model AuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorType   String   @map("actor_type") @db.VarChar(20) // admin, system, customer
+  actorId     String?  @map("actor_id") @db.Uuid
+  action      String   @db.VarChar(50) // product.created, inventory.adjusted, etc.
+  entityType  String   @map("entity_type") @db.VarChar(50)
+  entityId    String   @map("entity_id") @db.Uuid
+  beforeState Json?    @map("before_state") @db.JsonB
+  afterState  Json?    @map("after_state") @db.JsonB
+  metadata    Json?    @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_events")
+}
+
+// ─────────────────────────────────────────────
+// 18. WEBHOOK EVENTS
+// ─────────────────────────────────────────────
+model WebhookEvent {
+  id              String    @id @default(uuid()) @db.Uuid
+  provider        String    @db.VarChar(50)
+  providerEventId String    @unique @map("provider_event_id") @db.VarChar(200)
+  eventType       String    @map("event_type") @db.VarChar(100)
+  payload         Json      @db.JsonB
+  status          String    @default("received") @db.VarChar(20)
+  processedAt     DateTime? @map("processed_at") @db.Timestamptz()
+  errorMessage    String?   @map("error_message") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([provider, eventType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("webhook_events")
+}

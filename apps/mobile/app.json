@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Sajani",
+    "slug": "sajani-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "sajani",
+    "splash": {
+      "backgroundColor": "#6B1D2A",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sajani.app"
+    },
+    "android": {
+      "package": "com.sajani.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#6B1D2A"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-asset"
+    ]
+  }
+}
