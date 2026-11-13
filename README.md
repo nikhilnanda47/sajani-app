@@ -115,7 +115,7 @@ Full spec: [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 0 — Design | HLD, DB design, LLD, OpenAPI spec | ✅ Complete |
-| 1 — Foundations | Monorepo, NestJS skeleton, Prisma schema, Expo shell, CI | 🔲 Next |
+| 1 — Foundations | Monorepo, NestJS skeleton, Prisma schema, Expo shell, CI | ✅ Complete |
 | 2 — Catalog | Auth, categories, products, media, admin + mobile screens | 🔲 |
 | 3 — Cart & Checkout | Addresses, inventory, cart, checkout, orders | 🔲 |
 | 4 — Payments | Gateway integration, webhooks, refunds, UPI flow | 🔲 |
@@ -123,25 +123,133 @@ Full spec: [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
 
 ## Getting Started
 
-```bash
-# Prerequisites: Node.js LTS, Docker
+### Prerequisites
 
-# Clone
+| Tool | Version | Install |
+|------|---------|---------|
+| Node.js | >= 22.x | `brew install node@22` |
+| PostgreSQL | 16.x | `brew install postgresql@16 && brew services start postgresql@16` |
+| Docker (optional) | Latest | `brew install --cask docker` |
+| Expo Go (optional) | Latest | Install from App Store / Play Store |
+
+### 1. Clone the repo
+
+```bash
 git clone git@github.com:nikhilnanda47/sajani-app.git
 cd sajani-app
+```
 
-# Start local database
+### 2. Set up the database
+
+**Option A — Local PostgreSQL (recommended for dev):**
+
+```bash
+# Create database user and database
+psql postgres -c "CREATE USER sajani WITH PASSWORD 'sajani_dev_password' CREATEDB;"
+psql postgres -c "CREATE DATABASE sajani_dev OWNER sajani;"
+psql postgres -c "GRANT ALL PRIVILEGES ON DATABASE sajani_dev TO sajani;"
+```
+
+**Option B — Docker:**
+
+```bash
 docker compose up -d
+```
 
-# Install dependencies
+### 3. Install dependencies
+
+```bash
+# Install root workspace (API, admin, shared package)
 npm install
 
-# Run database migrations
-npm run db:migrate -w apps/api
-
-# Start development (all apps)
-npm run dev
+# Install mobile app separately (Expo requires isolated node_modules)
+cd apps/mobile && npm install && cd ../..
 ```
+
+### 4. Configure environment
+
+```bash
+cp apps/api/.env.example apps/api/.env
+# Edit apps/api/.env if needed (defaults work for local dev)
+```
+
+Default `.env` connects to:
+```
+DATABASE_URL=postgresql://sajani:sajani_dev_password@localhost:5432/sajani_dev
+```
+
+### 5. Run database migrations
+
+```bash
+# Generate Prisma client
+cd apps/api && npx prisma generate
+
+# Run migrations (creates all 18 tables)
+npx prisma migrate dev
+
+# Go back to root
+cd ../..
+```
+
+### 6. Build the shared package
+
+```bash
+cd packages/shared && npx tsc && cd ../..
+```
+
+### 7. Start development servers
+
+**API (NestJS):**
+```bash
+cd apps/api && npx nest build && node dist/main.js
+# API: http://localhost:3000
+# Swagger: http://localhost:3000/api/docs
+# Health: http://localhost:3000/health
+```
+
+**Admin Panel (Next.js):**
+```bash
+cd apps/admin && npm run dev
+# Admin: http://localhost:3001
+```
+
+**Mobile App (Expo):**
+```bash
+cd apps/mobile && npx expo start --web
+# Web preview: http://localhost:8081
+# Or scan QR with Expo Go for phone preview
+```
+
+### 8. Verify everything works
+
+```bash
+# Health check (API must be running)
+curl http://localhost:3000/health
+
+# Expected response:
+# {"success":true,"data":{"status":"ok","database":"connected",...}}
+```
+
+### Useful commands
+
+| Command | Description |
+|---------|-------------|
+| `npx prisma studio` | Visual database browser at localhost:5555 |
+| `npx prisma migrate dev --name <name>` | Create a new migration |
+| `npx prisma generate` | Regenerate Prisma client after schema changes |
+| `psql postgresql://sajani:sajani_dev_password@localhost:5432/sajani_dev` | Connect to database CLI |
+| `npx expo start --web --clear` | Start mobile app with cleared cache |
+
+### Project ports
+
+| Service | Port | URL |
+|---------|------|-----|
+| API | 3000 | http://localhost:3000 |
+| Swagger Docs | 3000 | http://localhost:3000/api/docs |
+| Prisma Studio | 5555 | http://localhost:5555 |
+| Admin Panel | 3001 | http://localhost:3001 |
+| Mobile (Web) | 8081 | http://localhost:8081 |
+| PostgreSQL | 5432 | — |
 
 ## Documentation
 
