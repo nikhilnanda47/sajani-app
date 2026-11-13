@@ -1356,6 +1356,10 @@ components:
         afterState:
           type: object
           nullable: true
+        metadata:
+          type: object
+          nullable: true
+          description: Additional context (reason, IP, etc.)
         createdAt:
           type: string
           format: date-time
@@ -2647,7 +2651,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [placed, confirmed, packed, shipped, delivered, cancelled, return_requested, return_approved, returned, refund_pending, refunded]
+            enum: [placed, confirmed, packed, shipped, delivered, cancelled, return_requested, return_approved, return_rejected, returned, refund_pending, refunded]
         - name: paymentMode
           in: query
           schema:

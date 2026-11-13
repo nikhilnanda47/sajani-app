@@ -58,7 +58,7 @@
 | Screen | P0 Features |
 |---|---|
 | Home | Hero banner, featured collections (Everyday, Signature, Heritage, Celebrations) |
-| Explore | Browse by category, search by name/fabric/motif, filter (price, fabric, weave, color), sort (newest, price) |
+| Explore | Browse by category, search by name/fabric/motif, filter (price, fabric, weave, color), sort (newest, price_asc, price_desc, relevance) |
 | Product Detail | Multiple photos, zoom, price (INR paise), stock status, fabric, weave method, dimensions, wash care, origin, blouse-piece info, shipping estimate, COD eligibility |
 | Cart | Add/edit/remove items, server-calculated subtotal, shipping, tax, total |
 | Checkout | Address capture (name, phone, PIN, city, state, landmark), serviceability check, COD/UPI selection, idempotent order placement |
@@ -68,7 +68,7 @@
 
 ### 3.2 Backend API (`apps/api`)
 
-10 NestJS modules for pilot:
+12 NestJS modules for pilot:
 
 | Module | P0 Scope |
 |---|---|
@@ -165,7 +165,7 @@ BEGIN TRANSACTION
     ├── available = on_hand - reserved
     ├── available >= qty?
     │     ├─ YES → reserved += qty
-    │     │        Create reservation (expires in 30 min for UPI)
+    │     │        Create reservation (expires in 30 min for UPI, 24 hours for COD)
     │     │        Create order
     │     │        COMMIT
     │     └─ NO  → ROLLBACK → 409 Conflict
@@ -200,29 +200,30 @@ CANCELLED  CANCELLED                         RETURN_REQUESTED
 
 ## 5. Database Schema (Pilot)
 
-15 tables — single PostgreSQL database:
+18 tables — single PostgreSQL database:
 
 ```
-users (id UUID PK, phone UNIQUE, name, verified_at, status, created_at)
-addresses (id, user_id FK, name, phone, line1, line2, city, state, pin_code, landmark, is_default)
-categories (id, slug UNIQUE, name, sort_order, active)
-products (id, slug UNIQUE, title, description, category_id FK, publish_status, fabric, weave_method, origin, care, created_at)
-product_variants (id, product_id FK, sku UNIQUE, attributes JSONB, price_paise INT, compare_at_paise INT?, active)
-product_media (id, product_id FK, variant_id?, object_key, type, alt_text, sort_order)
-inventory (variant_id UNIQUE FK, on_hand INT, reserved INT, unavailable INT, version INT, updated_at)
-inventory_reservations (id, variant_id FK, order_id?, qty, expires_at, status)
-cart_items (id, user_id FK, variant_id FK, quantity)
-orders (id, public_number UNIQUE, user_id FK, status, payment_status, subtotal_paise, shipping_paise, tax_paise, total_paise, payment_mode, address_snapshot JSONB, created_at)
-order_items (id, order_id FK, variant_id FK, title_snapshot, sku_snapshot, qty, unit_price_paise, tax_paise)
-payments (id, order_id FK, gateway, provider_order_id, provider_payment_id, amount_paise, status, created_at)
-shipments (id, order_id FK, carrier, tracking_id, status, dispatched_at, delivered_at)
-returns (id, order_id FK, item_id FK, qty, reason, status, created_at)
-refunds (id, return_id FK, payment_id FK, gateway_refund_id, amount_paise, status, created_at)
-audit_events (id, actor_id, action, entity_type, entity_id, before JSONB, after JSONB, created_at)
-webhook_events (id, provider, provider_event_id UNIQUE, payload JSONB, processed_at)
+users (id UUID PK, phone UNIQUE, name, email, verified_at, status, created_at, updated_at)
+addresses (id, user_id FK, label, recipient_name, recipient_phone, line1, line2, landmark, city, district, state, pin_code, is_default, created_at, updated_at)
+categories (id, slug UNIQUE, name, description, image_url, sort_order, active, created_at, updated_at)
+products (id, slug UNIQUE, title, description, short_description, category_id FK, publish_status, fabric, weave_method, origin, care_instructions, blouse_piece, length, width, weight, occasion[], tags[], created_at, updated_at)
+product_variants (id, product_id FK, sku UNIQUE, name, color, attributes JSONB, price_paise INT, compare_at_paise INT?, active, sort_order, created_at, updated_at)
+product_media (id, product_id FK, variant_id?, object_key, thumbnail_key, type, mime_type, alt_text, width, height, size_bytes, sort_order, created_at)
+inventory (variant_id PK FK, on_hand INT, reserved INT, unavailable INT, version INT, updated_at)
+inventory_reservations (id, variant_id FK, order_id?, qty, status, expires_at, created_at, updated_at)
+cart_items (id, user_id FK, variant_id FK, quantity, added_at, updated_at)
+orders (id, public_number UNIQUE, user_id FK, status, payment_mode, payment_status, subtotal_paise, discount_paise, shipping_paise, tax_paise, total_paise, address_snapshot JSONB, notes, idempotency_key UNIQUE, confirmed_at, packed_at, shipped_at, delivered_at, cancelled_at, cancellation_reason, created_at, updated_at)
+order_items (id, order_id FK, variant_id FK, product_title, variant_name, sku, qty, unit_price_paise, tax_paise, total_paise, product_image_url, created_at)
+payments (id, order_id FK, gateway, provider_order_id, provider_payment_id, method, amount_paise, currency, status, failure_reason, paid_at, created_at, updated_at)
+shipments (id, order_id FK, carrier, tracking_id, tracking_url, status, estimated_delivery, dispatched_at, delivered_at, created_at, updated_at)
+returns (id, order_id FK, order_item_id FK, qty, reason, reason_detail, status, admin_notes, requested_at, resolved_at, created_at, updated_at)
+refunds (id, order_id FK, return_id? FK, payment_id FK, gateway_refund_id, amount_paise, status, reason, initiated_by FK, created_at, updated_at)
+admin_users (id, phone UNIQUE, name, email, role, status, last_login_at, created_at, updated_at)
+audit_events (id, actor_type, actor_id, action, entity_type, entity_id, before_state JSONB, after_state JSONB, metadata JSONB, created_at)
+webhook_events (id, provider, provider_event_id UNIQUE, event_type, payload JSONB, status, processed_at, error_message, created_at)
 ```
 
-Key constraints: integer paise for money, UTC timestamps, UUID PKs, indexes on SKU/slug/phone/order status/public_number.
+Key constraints: integer paise for money, UTC timestamps, UUID PKs, indexes on SKU/slug/phone/order status/public_number. See `docs/architecture/database-design.md` for full column details, types, and constraints.
 
 ---
 
@@ -230,27 +231,54 @@ Key constraints: integer paise for money, UTC timestamps, UUID PKs, indexes on S
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
+| GET | /health | Public | Health check |
+| POST | /api/v1/auth/otp/request | Public (rate-limited) | Send OTP |
+| POST | /api/v1/auth/otp/verify | Public | Verify OTP, get JWT |
+| POST | /api/v1/auth/refresh | Public | Refresh access token |
+| GET | /api/v1/me | Customer | Get profile |
+| PATCH | /api/v1/me | Customer | Update profile |
+| GET | /api/v1/me/addresses | Customer | List addresses |
+| POST | /api/v1/me/addresses | Customer | Create address |
+| PATCH | /api/v1/me/addresses/:id | Customer | Update address |
+| DELETE | /api/v1/me/addresses/:id | Customer | Delete address |
 | GET | /api/v1/categories | Public | Category list |
 | GET | /api/v1/products | Public | Paginated catalog with filters/sort |
 | GET | /api/v1/products/:slug | Public | Product detail |
-| POST | /api/v1/auth/otp/request | Public (rate-limited) | Send OTP |
-| POST | /api/v1/auth/otp/verify | Public | Verify OTP, get JWT |
-| GET | /api/v1/me | Customer | Profile |
-| PATCH | /api/v1/me | Customer | Update profile |
-| GET/POST | /api/v1/me/addresses | Customer | Address CRUD |
-| GET/POST/PATCH/DELETE | /api/v1/cart/items | Customer | Cart operations |
+| GET | /api/v1/cart | Customer | Get cart (server-priced) |
+| POST | /api/v1/cart/items | Customer | Add to cart |
+| PATCH | /api/v1/cart/items/:id | Customer | Update cart item quantity |
+| DELETE | /api/v1/cart/items/:id | Customer | Remove from cart |
 | POST | /api/v1/checkout/quote | Customer | Server-calculated totals |
 | POST | /api/v1/orders | Customer | Place order (idempotent) |
-| GET | /api/v1/orders/:id | Customer (owner) | Order detail |
 | GET | /api/v1/orders | Customer | Order history |
+| GET | /api/v1/orders/:id | Customer (owner) | Order detail |
+| POST | /api/v1/orders/:id/cancel | Customer | Cancel order |
+| POST | /api/v1/orders/:id/return | Customer | Request return |
 | POST | /api/v1/payments/:orderId/initiate | Customer | Start UPI payment |
 | POST | /api/v1/webhooks/payments | Webhook (signed) | Payment callback |
-| GET/POST/PATCH | /api/v1/admin/products | Admin | Catalog CRUD |
-| POST | /api/v1/admin/inventory/adjustments | Admin | Stock adjustment |
-| GET/PATCH | /api/v1/admin/orders | Admin | Order management |
-| GET | /api/v1/admin/reports/:type | Admin | Sales/stock reports |
+| POST | /api/v1/admin/categories | Admin | Create category |
+| PATCH | /api/v1/admin/categories/:id | Admin | Update category |
+| GET | /api/v1/admin/products | Admin | List all products (incl. drafts) |
+| POST | /api/v1/admin/products | Admin | Create product with variants |
+| PATCH | /api/v1/admin/products/:id | Admin | Update product |
+| POST | /api/v1/admin/products/:id/variants | Admin | Add variant |
+| PATCH | /api/v1/admin/products/:id/variants/:variantId | Admin | Update variant |
+| POST | /api/v1/admin/media/upload-url | Admin | Request signed upload URL |
+| POST | /api/v1/admin/media/confirm | Admin | Confirm upload + thumbnails |
+| DELETE | /api/v1/admin/media/:id | Admin | Delete media |
+| GET | /api/v1/admin/inventory | Admin | List stock levels |
+| POST | /api/v1/admin/inventory/adjustments | Admin | Adjust stock (audited) |
+| GET | /api/v1/admin/orders | Admin | Search/filter orders |
+| GET | /api/v1/admin/orders/:id | Admin | Order detail (admin view) |
+| PATCH | /api/v1/admin/orders/:id/status | Admin | Update order status |
+| POST | /api/v1/admin/orders/:id/refund | Admin | Initiate refund |
+| GET | /api/v1/admin/reports/orders | Admin | Orders & revenue report |
+| GET | /api/v1/admin/reports/stock | Admin | Stock summary |
+| GET | /api/v1/admin/reports/top-products | Admin | Top selling products |
+| GET | /api/v1/admin/users | Admin (owner) | List admin users |
+| POST | /api/v1/admin/users | Admin (owner) | Create admin user |
 
-Errors: `{code, message, details?, requestId}` with 400/401/403/404/409/429 statuses.
+**38 endpoints total.** Errors: `{success, error: {code, message, details?}, requestId}` with 400/401/403/404/409/429 statuses. See `docs/api/openapi.yaml` for full request/response schemas.
 
 ---
 
@@ -322,10 +350,10 @@ Push → Lint + Typecheck + Test (parallel) → Build → Deploy Staging (auto) 
 | Admin auth | Same OTP flow, role checked via DB; admin endpoints behind RBAC guard |
 | Payments | Never store card/UPI creds; hosted gateway SDK; verify webhook signatures |
 | Inputs | class-validator DTOs on every endpoint; sanitize strings |
-| Uploads | Signed URLs with content-type + 10MB size limit |
+| Uploads | Signed URLs with content-type restriction; max 10MB images, 50MB video |
 | Secrets | Environment variables only; .env in .gitignore |
 | HTTPS | TLS enforced; platform handles certs |
-| Rate limiting | OTP: 3/phone/10min, 10/IP/hour; API: 100 req/min/user |
+| Rate limiting | OTP: 3/phone/10min, 10/IP/hour, 5 verify attempts per OTP; API: 100 req/min/user; Public: 30 req/min/IP |
 | Audit | All admin mutations logged in audit_events table |
 
 ---

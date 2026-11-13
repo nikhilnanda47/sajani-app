@@ -223,7 +223,7 @@ Temporary stock holds created at checkout, released on expiry or cancellation.
 | order_id | UUID | FK → orders.id, NULL | Set when order is created |
 | qty | INT | NOT NULL | Quantity reserved |
 | status | VARCHAR(20) | NOT NULL, DEFAULT 'held' | held, committed, released, expired |
-| expires_at | TIMESTAMPTZ | NOT NULL | 30 min for UPI; longer for COD |
+| expires_at | TIMESTAMPTZ | NOT NULL | 30 min for UPI; 24 hours for COD |
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
 | updated_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
 
@@ -260,7 +260,7 @@ Server-side cart. Prices are NOT stored — recalculated from variant on every r
 | user_id | UUID | FK → users.id, NOT NULL | |
 | status | VARCHAR(30) | NOT NULL, DEFAULT 'placed' | See state machine |
 | payment_mode | VARCHAR(20) | NOT NULL | "upi", "cod" |
-| payment_status | VARCHAR(20) | NOT NULL, DEFAULT 'pending' | pending, initiated, success, failed, refund_pending, refunded |
+| payment_status | VARCHAR(20) | NOT NULL, DEFAULT 'pending' | pending, initiated, success, failed, expired, cod_pending, refund_pending, refunded |
 | subtotal_paise | INT | NOT NULL | Sum of line items |
 | discount_paise | INT | NOT NULL, DEFAULT 0 | Coupon/promo (future) |
 | shipping_paise | INT | NOT NULL | Shipping charge |
@@ -366,7 +366,7 @@ Return requests linked to orders.
 | order_id | UUID | FK → orders.id, NOT NULL | |
 | order_item_id | UUID | FK → order_items.id, NOT NULL | Which item is being returned |
 | qty | INT | NOT NULL | Quantity being returned |
-| reason | VARCHAR(255) | NOT NULL | "Damaged", "Wrong product", "Not as described", "Other" |
+| reason | VARCHAR(255) | NOT NULL | damaged, wrong_product, not_as_described, other |
 | reason_detail | TEXT | NULL | Customer's description |
 | status | VARCHAR(30) | NOT NULL, DEFAULT 'requested' | requested, approved, rejected, received, completed |
 | admin_notes | TEXT | NULL | Internal notes |
