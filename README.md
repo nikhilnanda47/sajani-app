@@ -151,6 +151,7 @@ npm run dev
 | [Database Design](docs/architecture/database-design.md) | 18 tables, ER diagram, constraints, indexes |
 | [LLD](docs/architecture/LLD.md) | Module designs, DTOs, services, state machines, error codes |
 | [OpenAPI Spec](docs/api/openapi.yaml) | 38 REST endpoints with full request/response schemas |
+| [UI/UX Designs](https://drive.google.com/drive/folders/1VGF8a_wP-hkXg4s66_ixaiOxPvS10jpX?usp=sharing) | Mobile app screens and design assets |
 
 ## Guiding Principles
 
