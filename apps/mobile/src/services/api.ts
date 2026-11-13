@@ -3,9 +3,16 @@
  * Uses the TransformInterceptor response shape: { success, data, requestId }
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const API_BASE = __DEV__
   ? 'http://localhost:3000'  // Dev: local API
   : 'https://api.sajani.in'; // Prod: placeholder
+
+const TOKEN_KEY = 'sajani_token';
+const REFRESH_KEY = 'sajani_refresh';
+
+let accessToken: string | null = null;
 
 interface ApiResponse<T> {
   success: boolean;
@@ -86,8 +93,17 @@ class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`);
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const json: ApiResponse<T> = await res.json();
 
   if (!json.success) {
@@ -96,6 +112,119 @@ async function request<T>(path: string): Promise<T> {
   }
 
   return json.data;
+}
+
+// ── Token management ──
+
+export async function loadToken(): Promise<boolean> {
+  try {
+    accessToken = await AsyncStorage.getItem(TOKEN_KEY);
+    return !!accessToken;
+  } catch {
+    return false;
+  }
+}
+
+export async function saveTokens(access: string, refresh: string) {
+  accessToken = access;
+  await AsyncStorage.setItem(TOKEN_KEY, access);
+  await AsyncStorage.setItem(REFRESH_KEY, refresh);
+}
+
+export async function clearTokens() {
+  accessToken = null;
+  await AsyncStorage.removeItem(TOKEN_KEY);
+  await AsyncStorage.removeItem(REFRESH_KEY);
+}
+
+export function isLoggedIn(): boolean {
+  return !!accessToken;
+}
+
+// ── Auth endpoints ──
+
+export async function requestOtp(phone: string) {
+  return request<{ message: string; expiresInSeconds: number }>(
+    '/api/v1/auth/otp/request',
+    { method: 'POST', body: JSON.stringify({ phone }) },
+  );
+}
+
+export async function verifyOtp(phone: string, otp: string) {
+  const data = await request<{
+    accessToken: string;
+    refreshToken: string;
+    isNewUser: boolean;
+    user: { id: string; phone: string; name: string | null; type: string };
+  }>('/api/v1/auth/otp/verify', {
+    method: 'POST',
+    body: JSON.stringify({ phone, otp }),
+  });
+
+  await saveTokens(data.accessToken, data.refreshToken);
+  return data;
+}
+
+// ── Profile endpoints ──
+
+export interface UserProfile {
+  id: string;
+  phone: string;
+  name: string | null;
+  email: string | null;
+  status: string;
+  type: string;
+  createdAt: string;
+}
+
+export async function getProfile(): Promise<UserProfile> {
+  return request<UserProfile>('/api/v1/me');
+}
+
+export async function updateProfile(data: { name?: string; email?: string }): Promise<UserProfile> {
+  return request<UserProfile>('/api/v1/me', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+// ── Address endpoints ──
+
+export interface Address {
+  id: string;
+  recipientName: string;
+  recipientPhone: string;
+  line1: string;
+  line2: string | null;
+  landmark: string | null;
+  city: string;
+  district: string;
+  state: string;
+  pinCode: string;
+  label: string | null;
+  isDefault: boolean;
+}
+
+export async function getAddresses(): Promise<Address[]> {
+  return request<Address[]>('/api/v1/me/addresses');
+}
+
+export async function createAddress(data: Record<string, unknown>): Promise<Address> {
+  return request<Address>('/api/v1/me/addresses', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateAddress(id: string, data: Record<string, unknown>): Promise<Address> {
+  return request<Address>(`/api/v1/me/addresses/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAddress(id: string): Promise<void> {
+  await request(`/api/v1/me/addresses/${id}`, { method: 'DELETE' });
 }
 
 // ── Public endpoints (no auth needed) ──

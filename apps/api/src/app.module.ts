@@ -6,6 +6,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
+import { UsersModule } from './modules/users/users.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -33,10 +35,10 @@ import { HealthController } from './health.controller';
 
     // Feature modules
     AuthModule,
+    UsersModule,
+    AddressesModule,
     CategoriesModule,
     ProductsModule,
-    // UsersModule,
-    // AddressesModule,
     // CategoriesModule,
     // ProductsModule,
     // MediaModule,
