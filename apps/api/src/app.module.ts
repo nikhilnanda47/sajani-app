@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -28,8 +29,8 @@ import { HealthController } from './health.controller';
     // Database
     PrismaModule,
 
-    // Feature modules (will be added as we build them)
-    // AuthModule,
+    // Feature modules
+    AuthModule,
     // UsersModule,
     // AddressesModule,
     // CategoriesModule,
