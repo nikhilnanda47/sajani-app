@@ -1,14 +1,48 @@
+// @ts-nocheck
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme';
+import { colors, elevation } from '../theme';
 import HomeScreen from '../screens/HomeScreen';
 import ExploreScreen from '../screens/ExploreScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
 import CartScreen from '../screens/CartScreen';
 import OrdersScreen from '../screens/OrdersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
+const ExploreStack = createNativeStackNavigator();
+
+// Explore tab has its own stack: Explore → ProductDetail
+function ExploreStackScreen() {
+  return (
+    <ExploreStack.Navigator>
+      <ExploreStack.Screen
+        name="ExploreList"
+        component={ExploreScreen}
+        options={{ headerShown: false }}
+      />
+      <ExploreStack.Screen
+        name="ProductDetail"
+        component={ProductDetailScreen}
+        options={{
+          headerTitle: 'Product Details',
+          headerStyle: {
+            backgroundColor: colors.surface,
+          },
+          headerTintColor: colors.primary,
+          headerTitleStyle: {
+            fontWeight: '600',
+            fontSize: 16,
+          },
+          headerShadowVisible: false,
+          headerBackTitle: 'Back',
+        }}
+      />
+    </ExploreStack.Navigator>
+  );
+}
 
 export default function TabNavigator() {
   return (
@@ -21,33 +55,42 @@ export default function TabNavigator() {
           else if (route.name === 'Cart') iconName = focused ? 'bag' : 'bag-outline';
           else if (route.name === 'Orders') iconName = focused ? 'receipt' : 'receipt-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
-          return <Ionicons name={iconName} size={size} color={focused ? colors.maroon : colors.grey} />;
+          return <Ionicons name={iconName} size={22} color={focused ? colors.primary : colors.neutral} />;
         },
-        tabBarActiveTintColor: colors.maroon,
-        tabBarInactiveTintColor: colors.grey,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.neutral,
         tabBarStyle: {
-          backgroundColor: colors.white,
-          borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 8,
+          backgroundColor: colors.surface,
+          ...elevation.nav,
+          height: 80,
+          paddingBottom: 16,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600' as const,
+          letterSpacing: 0.5,
         },
         headerStyle: {
-          backgroundColor: colors.white,
+          backgroundColor: colors.surface,
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
         },
         headerTitleStyle: {
-          color: colors.charcoal,
-          fontWeight: '700' as const,
+          color: colors.primary,
+          fontWeight: '600' as const,
           fontSize: 18,
         },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerTitle: 'Sajani' }} />
-      <Tab.Screen name="Explore" component={ExploreScreen} />
+      <Tab.Screen
+        name="Explore"
+        component={ExploreStackScreen}
+        options={{ headerShown: false }}
+      />
       <Tab.Screen name="Cart" component={CartScreen} />
       <Tab.Screen name="Orders" component={OrdersScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />

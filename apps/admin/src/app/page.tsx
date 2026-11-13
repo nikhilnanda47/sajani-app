@@ -1,23 +1,39 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Sidebar from '../components/Sidebar';
+import { api } from '../services/api';
 import styles from './page.module.css';
 
-export default function AdminDashboard() {
+export default function DashboardPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = api.getToken();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    api.getMe().then((user) => {
+      if (user.type !== 'admin') {
+        api.clearToken();
+        router.push('/login');
+      } else {
+        setLoading(false);
+      }
+    }).catch(() => {
+      api.clearToken();
+      router.push('/login');
+    });
+  }, [router]);
+
+  if (loading) return <div className={styles.loading}>Loading...</div>;
+
   return (
     <div className={styles.layout}>
-      <aside className={styles.sidebar}>
-        <div className={styles.logo}>
-          <h1>Sajani</h1>
-          <span>Admin</span>
-        </div>
-        <nav className={styles.nav}>
-          <a href="/" className={styles.navItemActive}>Dashboard</a>
-          <a href="/catalog" className={styles.navItem}>Catalog</a>
-          <a href="/inventory" className={styles.navItem}>Inventory</a>
-          <a href="/orders" className={styles.navItem}>Orders</a>
-          <a href="/customers" className={styles.navItem}>Customers</a>
-          <a href="/reports" className={styles.navItem}>Reports</a>
-          <a href="/settings" className={styles.navItem}>Settings</a>
-        </nav>
-      </aside>
+      <Sidebar />
       <main className={styles.main}>
         <header className={styles.header}>
           <h2>Dashboard</h2>
@@ -42,7 +58,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <p style={{ marginTop: '2rem', color: 'var(--grey)' }}>
-            Dashboard data will populate once catalog and orders modules are built.
+            Dashboard stats will populate after orders module is built in Phase 3.
           </p>
         </div>
       </main>

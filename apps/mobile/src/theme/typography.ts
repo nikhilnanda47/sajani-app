@@ -1,67 +1,132 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { colors } from './colors';
 
+/**
+ * Typography system from Stitch "Heritage Handloom Luxury" design.
+ *
+ * Headings: Playfair Display (literary high-contrast serif)
+ * Body/Labels: Plus Jakarta Sans (clear geometric sans)
+ *
+ * Note: Custom fonts loaded via expo-font in App.tsx.
+ * Falls back to system fonts until loaded.
+ */
+
+const headlineFamily = Platform.select({
+  web: '"Playfair Display", Georgia, serif',
+  default: 'PlayfairDisplay',
+});
+
+const bodyFamily = Platform.select({
+  web: '"Plus Jakarta Sans", -apple-system, sans-serif',
+  default: 'PlusJakartaSans',
+});
+
 export const typography = StyleSheet.create({
-  h1: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.charcoal,
-    lineHeight: 34,
-  },
-  h2: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.charcoal,
-    lineHeight: 28,
-  },
-  h3: {
-    fontSize: 18,
+  // ── Headlines (Playfair Display) ──
+  headlineXl: {
+    fontFamily: headlineFamily,
+    fontSize: 30,
     fontWeight: '600',
-    color: colors.charcoal,
-    lineHeight: 24,
+    lineHeight: 36,
+    letterSpacing: -0.3,
+    color: colors.onSurface,
   },
-  body: {
+  headlineLg: {
+    fontFamily: headlineFamily,
+    fontSize: 26,
+    fontWeight: '500',
+    lineHeight: 32,
+    letterSpacing: -0.26,
+    color: colors.onSurface,
+  },
+  headlineMd: {
+    fontFamily: headlineFamily,
+    fontSize: 20,
+    fontWeight: '500',
+    lineHeight: 26,
+    color: colors.onSurface,
+  },
+
+  // ── Body (Plus Jakarta Sans) ──
+  bodyLg: {
+    fontFamily: bodyFamily,
     fontSize: 16,
     fontWeight: '400',
-    color: colors.charcoal,
-    lineHeight: 22,
+    lineHeight: 26,
+    letterSpacing: 0.16,
+    color: colors.onSurface,
   },
-  bodySmall: {
+  bodyMd: {
+    fontFamily: bodyFamily,
     fontSize: 14,
     fontWeight: '400',
-    color: colors.charcoalLight,
-    lineHeight: 20,
+    lineHeight: 22,
+    letterSpacing: 0.14,
+    color: colors.onSurface,
   },
-  caption: {
+  bodySm: {
+    fontFamily: bodyFamily,
     fontSize: 12,
     fontWeight: '400',
-    color: colors.grey,
-    lineHeight: 16,
+    lineHeight: 18,
+    letterSpacing: 0.24,
+    color: colors.onSurfaceVariant,
   },
-  label: {
+
+  // ── Labels (Plus Jakarta Sans, uppercase tracking) ──
+  labelLg: {
+    fontFamily: bodyFamily,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+    letterSpacing: 1.04, // 0.08em
+    textTransform: 'uppercase',
+    color: colors.onSurface,
+  },
+  labelMd: {
+    fontFamily: bodyFamily,
     fontSize: 11,
     fontWeight: '600',
-    color: colors.grey,
+    lineHeight: 16,
+    letterSpacing: 1.32, // 0.12em
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    lineHeight: 14,
+    color: colors.onSurfaceVariant,
   },
-  price: {
-    fontSize: 18,
+  labelSm: {
+    fontFamily: bodyFamily,
+    fontSize: 9,
     fontWeight: '700',
-    color: colors.maroon,
-    lineHeight: 24,
+    lineHeight: 12,
+    letterSpacing: 1.26, // 0.14em
+    textTransform: 'uppercase',
+    color: colors.onSurfaceVariant,
   },
-  priceStrike: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: colors.grey,
-    textDecorationLine: 'line-through',
-    lineHeight: 20,
-  },
-  button: {
-    fontSize: 16,
+
+  // ── Currency (Plus Jakarta Sans, tabular) ──
+  currencyMd: {
+    fontFamily: bodyFamily,
+    fontSize: 15,
     fontWeight: '600',
-    lineHeight: 22,
+    lineHeight: 20,
+    letterSpacing: -0.15,
+    color: colors.primary,
+  },
+  currencyStrike: {
+    fontFamily: bodyFamily,
+    fontSize: 13,
+    fontWeight: '400',
+    lineHeight: 18,
+    color: colors.neutral,
+    textDecorationLine: 'line-through',
+  },
+
+  // ── Button ──
+  button: {
+    fontFamily: bodyFamily,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+    letterSpacing: 1.04,
+    textTransform: 'uppercase',
   },
 });

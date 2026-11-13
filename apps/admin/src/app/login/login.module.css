@@ -1,0 +1,114 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--charcoal) 0%, #1a1a1a 100%);
+}
+
+.card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--maroon);
+}
+
+.logo span {
+  font-size: 0.75rem;
+  color: var(--grey);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--maroon);
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--grey);
+  margin: 0.5rem 0 1rem;
+}
+
+.error {
+  font-size: 0.85rem;
+  color: var(--error);
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: #fff5f5;
+  border-radius: 6px;
+}
+
+.button {
+  width: 100%;
+  padding: 0.85rem;
+  background: var(--maroon);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.link {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+  text-align: center;
+  background: none;
+  border: none;
+  color: var(--maroon);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+}

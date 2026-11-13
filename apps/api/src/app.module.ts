@@ -3,6 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { ProductsModule } from './modules/products/products.module';
+import { UsersModule } from './modules/users/users.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -28,10 +33,12 @@ import { HealthController } from './health.controller';
     // Database
     PrismaModule,
 
-    // Feature modules (will be added as we build them)
-    // AuthModule,
-    // UsersModule,
-    // AddressesModule,
+    // Feature modules
+    AuthModule,
+    UsersModule,
+    AddressesModule,
+    CategoriesModule,
+    ProductsModule,
     // CategoriesModule,
     // ProductsModule,
     // MediaModule,
