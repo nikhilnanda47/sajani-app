@@ -141,11 +141,13 @@ export default function ExploreScreen({ navigation }: Props) {
 }
 
 // ── Product Card Component ──
-function ProductCard({ product, onPress }: { product: Product; onPress: () => void }) {
+function ProductCard({ product, onPress }: { product: any; onPress: () => void }) {
   const variants = product.variants || [];
-  const price = getLowestPrice(variants);
-  const comparePrice = getComparePrice(variants);
-  const stock = getTotalStock(variants);
+  const price = (product as any).startingPricePaise ?? getLowestPrice(variants);
+  const comparePrice = (product as any).compareAtPaise ?? getComparePrice(variants);
+  const stock = (product as any).isAvailable !== undefined
+    ? ((product as any).isAvailable ? 1 : 0)
+    : getTotalStock(variants);
   const variant = variants[0];
 
   return (
@@ -181,14 +183,12 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
       {/* Metadata */}
       <View style={styles.cardMeta}>
         <Text style={styles.cardCategory} numberOfLines={1}>
-          {product.category?.name?.toUpperCase() || 'COLLECTION'}
+          {(product.category?.name || product.categorySlug || 'COLLECTION').toUpperCase()}
         </Text>
         <Text style={styles.cardTitle} numberOfLines={1}>{product.title}</Text>
-        {variant && (
-          <Text style={styles.cardVariant} numberOfLines={1}>
-            {[variant.color, product.fabric].filter(Boolean).join(' • ')}
-          </Text>
-        )}
+        <Text style={styles.cardVariant} numberOfLines={1}>
+          {[variant?.color, product.fabric].filter(Boolean).join(' • ') || product.fabric || ''}
+        </Text>
 
         {/* Price Row */}
         <View style={styles.priceRow}>

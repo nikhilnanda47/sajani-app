@@ -61,7 +61,9 @@ export default function HomeScreen() {
         <Text style={styles.sectionLabel}>LOOM ARCHIVES</Text>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Curated Collections</Text>
-          <Text style={styles.viewAll}>View All →</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Explore')}>
+            <Text style={styles.viewAll}>View All →</Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.collectionsGrid}>
           {[
@@ -70,12 +72,17 @@ export default function HomeScreen() {
             { name: 'Heritage', tag: 'BOMKAI & PASAPALLI', color: colors.primary },
             { name: 'Celebrations', tag: 'BRIDAL ZARI PALLU', color: colors.tertiaryContainer },
           ].map((col, i) => (
-            <View key={i} style={[styles.collectionCard, { backgroundColor: colors.surfaceContainerHigh }]}>
+            <TouchableOpacity
+              key={i}
+              style={[styles.collectionCard, { backgroundColor: colors.surfaceContainerHigh }]}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Explore')}
+            >
               <View style={[styles.collectionOverlay, { backgroundColor: col.color }]}>
                 <Text style={styles.collectionTag}>{col.tag}</Text>
                 <Text style={styles.collectionName}>{col.name}</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       </View>
@@ -91,9 +98,9 @@ export default function HomeScreen() {
         </View>
         {newArrivals.length > 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.arrivalsScroll}>
-            {newArrivals.map((product) => {
-              const price = getLowestPrice(product.variants || []);
-              const compare = getComparePrice(product.variants || []);
+            {newArrivals.map((product: any) => {
+              const price = product.startingPricePaise ?? getLowestPrice(product.variants || []);
+              const compare = product.compareAtPaise ?? getComparePrice(product.variants || []);
               return (
                 <TouchableOpacity
                   key={product.id}
@@ -109,7 +116,7 @@ export default function HomeScreen() {
                     <Text style={styles.arrivalFabric}>{product.fabric || 'Handloom'}</Text>
                   </View>
                   <View style={styles.arrivalMeta}>
-                    <Text style={styles.arrivalCategory}>{product.category?.name?.toUpperCase()}</Text>
+                    <Text style={styles.arrivalCategory}>{(product.category?.name || product.categorySlug || '').toUpperCase()}</Text>
                     <Text style={styles.arrivalTitle} numberOfLines={1}>{product.title}</Text>
                     <View style={styles.arrivalPriceRow}>
                       <Text style={styles.arrivalPrice}>{formatPaise(price)}</Text>

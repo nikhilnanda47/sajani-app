@@ -43,10 +43,8 @@ export interface ProductVariant {
   attributes: Record<string, unknown> | null;
   pricePaise: number;
   compareAtPaise: number | null;
-  inventory: {
-    available: number;
-    reserved: number;
-  } | null;
+  available: number;
+  isAvailable: boolean;
 }
 
 export interface Product {
@@ -227,6 +225,58 @@ export async function deleteAddress(id: string): Promise<void> {
   await request(`/api/v1/me/addresses/${id}`, { method: 'DELETE' });
 }
 
+// ── Cart endpoints ──
+
+export interface CartItemResponse {
+  id: string;
+  variant: {
+    id: string;
+    sku: string;
+    name: string | null;
+    color: string | null;
+    pricePaise: number;
+    compareAtPaise: number | null;
+    available: number;
+    productTitle: string;
+    productSlug: string;
+    imageUrl: string | null;
+  };
+  quantity: number;
+  lineTotalPaise: number;
+  isAvailable: boolean;
+  availabilityWarning?: string;
+}
+
+export interface CartResponse {
+  items: CartItemResponse[];
+  subtotalPaise: number;
+  itemCount: number;
+}
+
+export async function getCart(): Promise<CartResponse> {
+  return request<CartResponse>('/api/v1/cart');
+}
+
+export async function addToCart(variantId: string, quantity: number): Promise<CartResponse> {
+  return request<CartResponse>('/api/v1/cart/items', {
+    method: 'POST',
+    body: JSON.stringify({ variantId, quantity }),
+  });
+}
+
+export async function updateCartItem(itemId: string, quantity: number): Promise<CartResponse> {
+  return request<CartResponse>(`/api/v1/cart/items/${itemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ quantity }),
+  });
+}
+
+export async function removeCartItem(itemId: string): Promise<CartResponse> {
+  return request<CartResponse>(`/api/v1/cart/items/${itemId}`, {
+    method: 'DELETE',
+  });
+}
+
 // ── Public endpoints (no auth needed) ──
 
 export async function getCategories(): Promise<Category[]> {
@@ -261,5 +311,5 @@ export function getComparePrice(variants?: ProductVariant[]): number | null {
 
 export function getTotalStock(variants?: ProductVariant[]): number {
   if (!variants) return 0;
-  return variants.reduce((sum, v) => sum + (v.inventory?.available ?? 0), 0);
+  return variants.reduce((sum, v) => sum + (v.available ?? 0), 0);
 }
