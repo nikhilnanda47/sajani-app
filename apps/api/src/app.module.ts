@@ -8,6 +8,8 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { CartModule } from './modules/cart/cart.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -39,11 +41,8 @@ import { HealthController } from './health.controller';
     AddressesModule,
     CategoriesModule,
     ProductsModule,
-    // CategoriesModule,
-    // ProductsModule,
-    // MediaModule,
-    // InventoryModule,
-    // CartModule,
+    InventoryModule,
+    CartModule,
     // CheckoutModule,
     // OrdersModule,
     // PaymentsModule,

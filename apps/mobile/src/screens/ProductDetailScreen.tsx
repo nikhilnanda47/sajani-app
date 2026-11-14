@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Dimensions,
+  ActivityIndicator, Dimensions, Alert,
 } from 'react-native';
 import { colors, typography, spacing, borderRadius, elevation } from '../theme';
 import {
-  getProductBySlug, formatPaise, getTotalStock,
+  getProductBySlug, formatPaise, getTotalStock, addToCart, isLoggedIn,
   type Product, type ProductVariant,
 } from '../services/api';
 
@@ -22,6 +22,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [addingToCart, setAddingToCart] = useState(false);
 
   useEffect(() => {
     loadProduct();
@@ -61,7 +62,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
     );
   }
 
-  const stock = selectedVariant?.inventory?.available ?? 0;
+  const stock = selectedVariant?.available ?? 0;
   const totalStock = getTotalStock(product.variants);
   const discount = selectedVariant?.compareAtPaise && selectedVariant.compareAtPaise > selectedVariant.pricePaise
     ? Math.round((1 - selectedVariant.pricePaise / selectedVariant.compareAtPaise) * 100)
@@ -234,12 +235,28 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
           )}
         </View>
         <TouchableOpacity
-          style={[styles.addToCartBtn, stock <= 0 && styles.addToCartDisabled]}
-          disabled={stock <= 0}
+          style={[styles.addToCartBtn, (stock <= 0 || addingToCart) && styles.addToCartDisabled]}
+          disabled={stock <= 0 || addingToCart}
           activeOpacity={0.85}
+          onPress={async () => {
+            if (!isLoggedIn()) {
+              Alert.alert('Login Required', 'Please login from the Profile tab to add items to your bag.');
+              return;
+            }
+            if (!selectedVariant) return;
+            setAddingToCart(true);
+            try {
+              await addToCart(selectedVariant.id, 1);
+              Alert.alert('Added to Bag', `${product.title} has been added to your shopping bag.`);
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to add to cart');
+            } finally {
+              setAddingToCart(false);
+            }
+          }}
         >
           <Text style={styles.addToCartText}>
-            {stock > 0 ? 'ADD TO BAG' : 'SOLD OUT'}
+            {addingToCart ? 'ADDING...' : stock > 0 ? 'ADD TO BAG' : 'SOLD OUT'}
           </Text>
         </TouchableOpacity>
       </View>
