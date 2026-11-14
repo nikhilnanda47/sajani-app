@@ -187,11 +187,46 @@ Full spec: [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
 
 ### Prerequisites
 
+<details>
+<summary><strong>macOS</strong></summary>
+
 | Tool | Version | Install |
 |------|---------|---------|
 | Node.js | >= 22.x | `brew install node@22` |
 | PostgreSQL | 16.x | `brew install postgresql@16 && brew services start postgresql@16` |
 | Docker (optional) | Latest | `brew install --cask docker` |
+
+</details>
+
+<details>
+<summary><strong>Windows</strong></summary>
+
+| Tool | Version | Install |
+|------|---------|---------|
+| Node.js | >= 22.x | Download from [nodejs.org](https://nodejs.org/) or `winget install OpenJS.NodeJS.LTS` |
+| PostgreSQL | 16.x | Download from [postgresql.org](https://www.postgresql.org/download/windows/) (includes pgAdmin) |
+| Docker (optional) | Latest | Download [Docker Desktop](https://www.docker.com/products/docker-desktop/) |
+| Git | Latest | Download from [git-scm.com](https://git-scm.com/download/win) or `winget install Git.Git` |
+
+**Windows notes:**
+- Use **PowerShell 7+** or **Git Bash** (not Command Prompt) for all commands below
+- PowerShell 7+: Install via `winget install Microsoft.PowerShell`
+- Git Bash: Included with Git for Windows
+- All `npm`, `npx`, `node` commands work the same on Windows
+- If using PowerShell 5.x (default), replace `&&` with `;` in chained commands
+
+</details>
+
+<details>
+<summary><strong>Linux (Ubuntu/Debian)</strong></summary>
+
+| Tool | Version | Install |
+|------|---------|---------|
+| Node.js | >= 22.x | `curl -fsSL https://deb.nodesource.com/setup_22.x \| sudo -E bash - && sudo apt install -y nodejs` |
+| PostgreSQL | 16.x | `sudo apt install postgresql-16` |
+| Docker (optional) | Latest | [docs.docker.com/engine/install](https://docs.docker.com/engine/install/ubuntu/) |
+
+</details>
 
 ### 1. Clone the repo
 
@@ -200,9 +235,17 @@ git clone git@github.com:nikhilnanda47/sajani-app.git
 cd sajani-app
 ```
 
+> **Windows SSH note:** If SSH is not set up, use HTTPS instead:
+> ```bash
+> git clone https://github.com/nikhilnanda47/sajani-app.git
+> ```
+
 ### 2. Set up the database
 
 **Option A — Local PostgreSQL (recommended):**
+
+<details>
+<summary><strong>macOS / Linux</strong></summary>
 
 ```bash
 psql postgres -c "CREATE USER sajani WITH PASSWORD 'sajani_dev_password' CREATEDB;"
@@ -210,7 +253,32 @@ psql postgres -c "CREATE DATABASE sajani_dev OWNER sajani;"
 psql postgres -c "GRANT ALL PRIVILEGES ON DATABASE sajani_dev TO sajani;"
 ```
 
-**Option B — Docker:**
+</details>
+
+<details>
+<summary><strong>Windows</strong></summary>
+
+Open **pgAdmin** (installed with PostgreSQL) or **psql** from Start Menu:
+
+```sql
+-- In psql (connect as postgres user):
+psql -U postgres
+
+-- Then run:
+CREATE USER sajani WITH PASSWORD 'sajani_dev_password' CREATEDB;
+CREATE DATABASE sajani_dev OWNER sajani;
+GRANT ALL PRIVILEGES ON DATABASE sajani_dev TO sajani;
+\q
+```
+
+Or use **pgAdmin GUI:**
+1. Open pgAdmin → right-click "Login/Group Roles" → Create → Login/Group Role
+2. Name: `sajani`, Password: `sajani_dev_password`, Privileges: Can login + Create databases
+3. Right-click "Databases" → Create → Database, Name: `sajani_dev`, Owner: `sajani`
+
+</details>
+
+**Option B — Docker (all platforms):**
 
 ```bash
 docker compose up -d
@@ -223,8 +291,12 @@ docker compose up -d
 npm install
 
 # Mobile app (separate — Expo requires isolated node_modules)
-cd apps/mobile && npm install && cd ../..
+cd apps/mobile
+npm install
+cd ../..
 ```
+
+> **Windows PowerShell 5.x:** Use `cd apps\mobile` then `npm install` then `cd ..\..` (separate commands)
 
 ### 4. Configure environment
 
@@ -232,6 +304,11 @@ cd apps/mobile && npm install && cd ../..
 cp apps/api/.env.example apps/api/.env
 # Defaults work for local dev
 ```
+
+> **Windows (if `cp` not available):**
+> ```powershell
+> Copy-Item apps\api\.env.example apps\api\.env
+> ```
 
 ### 5. Run database migrations + seed
 
@@ -246,22 +323,26 @@ cd ../..
 ### 6. Build the shared package
 
 ```bash
-cd packages/shared && npx tsc && cd ../..
+cd packages/shared
+npx tsc
+cd ../..
 ```
 
 ### 7. Start development servers
 
-Open 3 terminals:
+Open 3 terminals (or terminal tabs):
 
 ```bash
 # Terminal 1 — API (localhost:3000)
 npm run dev -w @sajani/api
 
 # Terminal 2 — Admin Panel (localhost:3001)
-cd apps/admin && npm run dev
+cd apps/admin
+npm run dev
 
 # Terminal 3 — Mobile App (localhost:8081)
-cd apps/mobile && npx expo start --web
+cd apps/mobile
+npx expo start --web
 ```
 
 ### 8. Test login
