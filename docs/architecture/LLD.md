@@ -984,7 +984,7 @@ function canTransition(from: OrderStatus, to: OrderStatus): boolean {
 
 ### 2.11 Payments Module
 
-**Purpose:** Payment gateway integration, webhook processing, refunds.
+**Purpose:** Payment gateway integration, webhook processing, reconciliation, refunds.
 
 ```
 modules/payments/
@@ -992,9 +992,11 @@ modules/payments/
 ├── payments.controller.ts
 ├── payments.service.ts
 ├── webhook.controller.ts
+├── reconciliation.cron.ts          # Periodic payment status check
 ├── gateway/
 │   ├── payment-gateway.interface.ts
-│   └── razorpay.gateway.ts        # (or cashfree.gateway.ts)
+│   ├── razorpay.gateway.ts
+│   └── mock.gateway.ts             # Dev/test
 └── dto/
     ├── initiate-payment.dto.ts
     └── payment-response.dto.ts
@@ -1004,71 +1006,173 @@ modules/payments/
 
 ```typescript
 interface PaymentGateway {
+  // Creates a gateway order/session — returns checkout URL or SDK options
   createOrder(amount: number, currency: string, orderId: string): Promise<GatewayOrder>;
-  verifyWebhookSignature(body: string, signature: string): boolean;
-  getPaymentStatus(paymentId: string): Promise<PaymentStatus>;
-  initiateRefund(paymentId: string, amount: number): Promise<RefundResult>;
+
+  // Verifies webhook signature — MUST be gateway-specific (Razorpay HMAC-SHA256 ≠ Cashfree)
+  verifyWebhookSignature(rawBody: string, signature: string): boolean;
+
+  // Server-side verification — query gateway API for definitive payment status
+  // NEVER trust client-side success callback alone
+  getPaymentStatus(providerOrderId: string): Promise<GatewayPaymentStatus>;
+
+  // Initiate refund via gateway
+  initiateRefund(providerPaymentId: string, amount: number): Promise<RefundResult>;
 }
+
+// Gateway-specific implementations (NOT a shared generic verifier)
+// razorpay.gateway.ts → uses crypto.createHmac('sha256', secret)
+// cashfree.gateway.ts → uses different signature scheme
 ```
 
-**Payment Flow:**
+**Key Distinction — Public vs Secret Keys:**
+
+```typescript
+// SECRET keys — backend only (env vars, never exposed)
+RAZORPAY_KEY_SECRET=<secret>        // For webhook verification + API calls
+RAZORPAY_WEBHOOK_SECRET=<secret>    // For webhook signature verification
+
+// PUBLIC/PUBLISHABLE key — safe for mobile SDK
+RAZORPAY_KEY_ID=<publishable>       // Passed to mobile app for checkout SDK
+```
+
+The mobile app receives only the publishable key + gateway order ID to open the checkout UI. All verification happens server-side.
+
+**Payment Attempt Model:**
+
+Each payment attempt is a separate row. An order can have multiple attempts (customer retries). Only one can succeed.
+
+```typescript
+// WRONG: Reuse failed payment row
+payment.status = 'failed' → payment.status = 'pending'  // DON'T DO THIS
+
+// RIGHT: Create new attempt
+Payment #1: { orderId, status: 'failed', ... }
+Payment #2: { orderId, status: 'pending', ... }  // New row for retry
+```
+
+**Payment State Machine (per attempt):**
+
+```
+  pending ──→ initiated ──→ authorized ──→ captured (success)
+    │              │              │
+    │              │              └──→ capture_failed
+    │              │
+    │              └──→ failed
+    │
+    └──→ expired
+
+Note: "authorized" ≠ "captured" for Razorpay.
+      authorized = funds held on customer's account
+      captured = funds transferred to merchant
+      Only transition order to confirmed on CAPTURE, not authorize.
+```
+
+**Payment Flow (Revised):**
 
 ```
 Customer                    API                         Gateway
 ────────                    ───                         ───────
 POST /payments/:orderId/initiate
-                            Validate order status = 'placed'
+                            Validate order.status = 'placed'
                             Validate payment_mode = 'upi'
-                            Validate no existing successful payment
+                            Validate no active payment attempt (pending/initiated)
+                            Create new Payment row (status: 'pending')
                             Call gateway.createOrder(total, 'INR', orderId)
-                       <──  { gatewayOrderId, checkoutUrl/options }
+                            Update payment (status: 'initiated',
+                              providerOrderId: gatewayOrderId)
+                       <──  { gatewayOrderId, publishableKey, checkoutOptions }
 
-[Customer completes payment on gateway UI]
+[Customer completes payment on gateway checkout UI]
+
+[Mobile client receives success callback]
+                            ⚠️ DO NOT fulfill based on this callback alone
+                            Wait for server-side webhook verification
 
                             POST /webhooks/payments
-                            ├── Verify signature (HMAC-SHA256)
+                            ├── Verify signature (gateway-specific HMAC)
                             ├── Check webhook_events for duplicate
-                            │   (provider_event_id unique)
-                            ├── Verify amount matches order.total_paise
-                            ├── Verify gateway order ID matches
+                            │   UNIQUE (provider, provider_event_id)
+                            ├── Store webhook event (status: 'received')
                             │
-                            ├── If payment.captured:
-                            │   ├── Update payment status = 'success'
-                            │   ├── Update order payment_status = 'success'
-                            │   ├── Transition order: placed → confirmed
-                            │   ├── Commit inventory reservations
-                            │   └── Queue customer notification
+                            ├── In database transaction:
+                            │   ├── Lock payment row (SELECT FOR UPDATE)
+                            │   ├── Verify payment not already processed
+                            │   ├── Verify amount matches order.total_paise
+                            │   ├── Verify gateway order ID matches
+                            │   │
+                            │   ├── If payment.captured:
+                            │   │   ├── Update payment status = 'captured'
+                            │   │   ├── Update order payment_status = 'success'
+                            │   │   ├── Transition order: placed → confirmed
+                            │   │   ├── Commit inventory reservations
+                            │   │   └── Mark webhook event 'processed'
+                            │   │
+                            │   ├── If payment.authorized (not yet captured):
+                            │   │   ├── Update payment status = 'authorized'
+                            │   │   ├── Auto-capture if enabled, OR
+                            │   │   └── Wait for capture webhook
+                            │   │
+                            │   └── If payment.failed:
+                            │       ├── Update payment status = 'failed'
+                            │       ├── DO NOT release inventory yet
+                            │       │   (customer may retry with new attempt)
+                            │       └── Mark webhook event 'processed'
                             │
-                            └── If payment.failed:
-                                ├── Update payment status = 'failed'
-                                ├── Release inventory reservations
-                                └── Update order status = 'cancelled'
+                            └── Return { status: 'ok' }
 ```
 
-**Webhook Security:**
+**Stock Release Rules (Revised):**
+
+```
+Payment failed?
+  └── DON'T release stock immediately
+  └── Stock is still reserved for the ORDER, not the payment attempt
+  └── Customer may retry payment
+
+When to release stock:
+  1. Order explicitly cancelled (by customer or admin)
+  2. Order expired (no successful payment within reservation window)
+     → Handled by reservation-expiry.cron.ts (already built)
+  3. All payment attempts exhausted AND order past expiry
+
+Key principle: Inventory is reserved at ORDER level, not PAYMENT ATTEMPT level.
+```
+
+**Webhook Security (Revised):**
 
 ```typescript
 @Post('webhooks/payments')
+@HttpCode(200)  // Always return 200 to prevent gateway retries on our errors
 async handleWebhook(
   @Req() req: RawBodyRequest,
   @Headers('x-razorpay-signature') signature: string,
 ) {
-  // 1. Verify signature
+  // 1. Verify signature (gateway-specific, NOT generic)
+  // NestJS must be configured with rawBody: true in bootstrap
   const isValid = this.gateway.verifyWebhookSignature(
     req.rawBody.toString(), signature
   );
-  if (!isValid) throw new UnauthorizedException('INVALID_SIGNATURE');
+  if (!isValid) {
+    this.logger.warn('Invalid webhook signature received');
+    throw new UnauthorizedException('INVALID_SIGNATURE');
+  }
 
   // 2. Parse and deduplicate
   const event = JSON.parse(req.rawBody.toString());
   const eventId = event.event_id || event.id;
 
   const existing = await this.prisma.webhookEvent.findUnique({
-    where: { providerEventId: eventId },
+    where: {
+      provider_providerEventId: {
+        provider: 'razorpay',
+        providerEventId: eventId,
+      },
+    },
   });
-  if (existing) return { status: 'already_processed' };  // Idempotent
+  if (existing) return { status: 'already_processed' };
 
-  // 3. Store webhook event
+  // 3. Store webhook event BEFORE processing (crash recovery)
   await this.prisma.webhookEvent.create({
     data: {
       provider: 'razorpay',
@@ -1079,56 +1183,219 @@ async handleWebhook(
     },
   });
 
-  // 4. Process (in transaction with order/payment updates)
-  await this.processPaymentEvent(event);
+  // 4. Process in transaction (atomic order + payment + inventory update)
+  try {
+    await this.prisma.$transaction(async (tx) => {
+      await this.processPaymentEvent(tx, event);
+    });
 
-  // 5. Mark processed
-  await this.prisma.webhookEvent.update({
-    where: { providerEventId: eventId },
-    data: { status: 'processed', processedAt: new Date() },
-  });
+    // 5. Mark processed
+    await this.prisma.webhookEvent.update({
+      where: {
+        provider_providerEventId: {
+          provider: 'razorpay',
+          providerEventId: eventId,
+        },
+      },
+      data: { status: 'processed', processedAt: new Date() },
+    });
+  } catch (error) {
+    // Mark failed but still return 200 to prevent infinite retries
+    await this.prisma.webhookEvent.update({
+      where: {
+        provider_providerEventId: {
+          provider: 'razorpay',
+          providerEventId: eventId,
+        },
+      },
+      data: { status: 'failed' },
+    });
+    this.logger.error(`Webhook processing failed: ${error.message}`);
+  }
 
   return { status: 'ok' };
 }
+```
+
+**Payment Reconciliation Cron (NEW):**
+
+Webhooks are reliable but not guaranteed. A reconciliation job catches missed events.
+
+```typescript
+@Cron('*/10 * * * *')  // Every 10 minutes
+async reconcilePayments() {
+  // 1. Find orders with unresolved payments
+  //    (status: 'initiated' or 'authorized', created > 10 min ago)
+  const unresolvedPayments = await this.prisma.payment.findMany({
+    where: {
+      status: { in: ['initiated', 'authorized'] },
+      createdAt: { lt: subMinutes(new Date(), 10) },
+    },
+    include: { order: true },
+  });
+
+  for (const payment of unresolvedPayments) {
+    try {
+      // 2. Query gateway API for definitive status
+      const gatewayStatus = await this.gateway.getPaymentStatus(
+        payment.providerOrderId,
+      );
+
+      // 3. If captured → process as if webhook arrived
+      if (gatewayStatus.status === 'captured') {
+        await this.prisma.$transaction(async (tx) => {
+          // Verify not already processed (idempotent)
+          const current = await tx.payment.findUnique({
+            where: { id: payment.id },
+          });
+          if (current.status === 'captured') return; // Already done
+
+          // Same logic as webhook handler
+          await this.confirmPayment(tx, payment, gatewayStatus);
+        });
+        this.logger.log(`Reconciled payment ${payment.id} → captured`);
+      }
+
+      // 4. If failed/expired → mark failed
+      if (['failed', 'expired'].includes(gatewayStatus.status)) {
+        await this.prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: 'failed' },
+        });
+        this.logger.log(`Reconciled payment ${payment.id} → failed`);
+      }
+
+      // 5. If still pending on gateway → skip (will check next cycle)
+    } catch (error) {
+      this.logger.error(`Reconciliation failed for ${payment.id}: ${error.message}`);
+    }
+  }
+}
+```
+
+**Scenarios the reconciliation cron handles:**
+
+| Scenario | Without Reconciliation | With Reconciliation |
+|---|---|---|
+| Backend down when webhook arrives | Order stuck as "pending" forever | Resolved within 10 minutes |
+| Customer closes app during payment | No webhook processed | Gateway queried, order updated |
+| Webhook delivery fails (network) | Gateway retries, but may give up | Cron catches it independently |
+| Race condition: webhook + client callback | Possible double processing | Idempotent — safe either way |
+
+**Payment Initiation Idempotency:**
+
+```typescript
+class InitiatePaymentDto {
+  @IsUUID()
+  orderId: string;
+
+  @IsString() @MaxLength(100)
+  idempotencyKey: string;     // Client-generated, prevents duplicate initiations
+}
+
+// Service checks:
+// 1. No existing ACTIVE payment attempt (pending/initiated/authorized) for this order
+// 2. No existing payment with same idempotencyKey
+// If duplicate key found → return existing payment (don't create new)
+```
+
+**Additional Database Constraints:**
+
+```sql
+-- Prevent duplicate webhook events per provider
+CREATE UNIQUE INDEX idx_webhook_events_provider_event
+  ON webhook_events (provider, provider_event_id);
+
+-- Prevent duplicate gateway payment records
+CREATE UNIQUE INDEX idx_payments_provider_payment
+  ON payments (provider_payment_id)
+  WHERE provider_payment_id IS NOT NULL;
+
+-- Prevent duplicate gateway order records
+CREATE UNIQUE INDEX idx_payments_provider_order
+  ON payments (provider_order_id)
+  WHERE provider_order_id IS NOT NULL;
+
+-- Ensure only one successful payment per order
+CREATE UNIQUE INDEX idx_payments_order_success
+  ON payments (order_id)
+  WHERE status = 'captured';
+```
+
+**Order Confirmation Safety Rule:**
+
+```
+⚠️ CRITICAL: Never fulfill an order based on:
+  - Mobile SDK success callback
+  - Client-side redirect URL
+  - Customer claiming they paid
+
+ONLY confirm an order when:
+  - Webhook with valid signature confirms payment.captured
+  - OR reconciliation cron verifies captured status via gateway API
+  - AND amount matches order.total_paise
+  - AND gateway order ID matches our payment record
 ```
 
 **Refund Flow:**
 
 ```typescript
 async initiateRefund(orderId: string, adminId: string, amount?: number) {
-  const order = await this.prisma.order.findUnique({...});
-  const payment = await this.prisma.payment.findFirst({
-    where: { orderId, status: 'success' },
-  });
+  return this.prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    const payment = await tx.payment.findFirst({
+      where: { orderId, status: 'captured' },  // Only captured, not just 'success'
+    });
 
-  if (!payment) throw new BadRequestException('NO_SUCCESSFUL_PAYMENT');
+    if (!payment) throw new BadRequestException('NO_SUCCESSFUL_PAYMENT');
 
-  const refundAmount = amount ?? payment.amountPaise;
-  if (refundAmount > payment.amountPaise) {
-    throw new BadRequestException('REFUND_EXCEEDS_PAYMENT');
-  }
+    const refundAmount = amount ?? payment.amountPaise;
 
-  // Call gateway
-  const result = await this.gateway.initiateRefund(
-    payment.providerPaymentId, refundAmount
-  );
+    // Check total refunds don't exceed payment
+    const existingRefunds = await tx.refund.aggregate({
+      where: { paymentId: payment.id, status: { not: 'failed' } },
+      _sum: { amountPaise: true },
+    });
+    const totalRefunded = existingRefunds._sum.amountPaise ?? 0;
 
-  // Record refund
-  await this.prisma.refund.create({
-    data: {
-      orderId,
-      paymentId: payment.id,
-      gatewayRefundId: result.refundId,
-      amountPaise: refundAmount,
-      status: 'processing',
-      initiatedBy: adminId,
-    },
-  });
+    if (totalRefunded + refundAmount > payment.amountPaise) {
+      throw new BadRequestException('REFUND_EXCEEDS_PAYMENT');
+    }
 
-  // Update order
-  await this.prisma.order.update({
-    where: { id: orderId },
-    data: { paymentStatus: 'refund_pending' },
+    // Call gateway
+    const result = await this.gateway.initiateRefund(
+      payment.providerPaymentId!, refundAmount,
+    );
+
+    // Record refund
+    await tx.refund.create({
+      data: {
+        orderId,
+        paymentId: payment.id,
+        gatewayRefundId: result.refundId,
+        amountPaise: refundAmount,
+        status: 'processing',
+        initiatedBy: adminId,
+      },
+    });
+
+    // Update order payment status
+    await tx.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: 'refund_pending' },
+    });
+
+    // Audit log
+    await tx.auditEvent.create({
+      data: {
+        action: 'refund.initiated',
+        entityType: 'order',
+        entityId: orderId,
+        actorType: 'admin',
+        actorId: adminId,
+        afterState: { refundAmount, gatewayRefundId: result.refundId } as any,
+      },
+    });
   });
 }
 ```
@@ -1139,13 +1406,15 @@ async initiateRefund(orderId: string, adminId: string, amount?: number) {
 |---|---|---|
 | ORDER_NOT_FOUND | 404 | PAY_001 |
 | INVALID_ORDER_STATUS | 400 | PAY_002 |
-| PAYMENT_ALREADY_EXISTS | 409 | PAY_003 |
+| ACTIVE_PAYMENT_EXISTS | 409 | PAY_003 |
 | INVALID_WEBHOOK_SIGNATURE | 401 | PAY_004 |
 | AMOUNT_MISMATCH | 400 | PAY_005 |
 | DUPLICATE_WEBHOOK | 200 | — (idempotent OK) |
 | NO_SUCCESSFUL_PAYMENT | 400 | PAY_006 |
 | REFUND_EXCEEDS_PAYMENT | 400 | PAY_007 |
 | GATEWAY_ERROR | 502 | PAY_008 |
+| DUPLICATE_PAYMENT_INITIATION | 200 | — (return existing) |
+| PAYMENT_EXPIRED | 400 | PAY_009 |
 
 ---
 
