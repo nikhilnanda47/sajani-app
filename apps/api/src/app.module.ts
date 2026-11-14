@@ -10,6 +10,8 @@ import { UsersModule } from './modules/users/users.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { CartModule } from './modules/cart/cart.module';
+import { CheckoutModule } from './modules/checkout/checkout.module';
+import { OrdersModule } from './modules/orders/orders.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -43,8 +45,8 @@ import { HealthController } from './health.controller';
     ProductsModule,
     InventoryModule,
     CartModule,
-    // CheckoutModule,
-    // OrdersModule,
+    CheckoutModule,
+    OrdersModule,
     // PaymentsModule,
     // AdminModule,
   ],

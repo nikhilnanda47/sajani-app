@@ -55,16 +55,53 @@
 
 ### 3.1 Mobile App (`apps/mobile`)
 
+**Onboarding & System States (5 screens)**
+
 | Screen | P0 Features |
 |---|---|
-| Home | Hero banner, featured collections (Everyday, Signature, Heritage, Celebrations) |
-| Explore | Browse by category, search by name/fabric/motif, filter (price, fabric, weave, color), sort (newest, price_asc, price_desc, relevance) |
-| Product Detail | Multiple photos, zoom, price (INR paise), stock status, fabric, weave method, dimensions, wash care, origin, blouse-piece info, shipping estimate, COD eligibility |
-| Cart | Add/edit/remove items, server-calculated subtotal, shipping, tax, total |
-| Checkout | Address capture (name, phone, PIN, city, state, landmark), serviceability check, COD/UPI selection, idempotent order placement |
-| Orders | Order list, status tracking, order detail with tracking link, WhatsApp support link |
-| Profile | Phone, name, saved addresses |
-| Auth | OTP login at checkout or order lookup; guest browsing allowed |
+| Splash | Sajani logo on warm ivory, auto-transitions to Home or Welcome |
+| Welcome / Onboarding | 2-3 swipeable pages introducing Sajani heritage, direct-from-weavers, and delivery/returns. Skip link + Start Shopping CTA |
+| No Internet | On-brand error ("The Thread Seems Broken"), retry button |
+| App Update Required | Non-dismissable, links to app store ("A New Weave Awaits") |
+| Maintenance | Informational ("Weaving Something Better"), no action required |
+
+**Authentication (3 screens)**
+
+| Screen | P0 Features |
+|---|---|
+| Login — Phone | +91 phone input, Send OTP button, guest browsing note |
+| Login — OTP Verify | 6-digit input boxes, resend timer, change number link |
+| Name Capture | First-time name prompt after OTP login, skip option |
+
+**Core Shopping Flow (8 screens)**
+
+| Screen | P0 Features |
+|---|---|
+| Home | Hero banner, trust badges (Silk Mark, Bargarh Weavers, Bandha Tie-Dye), 2×2 collection grid, horizontal New Arrivals, authenticity section, footer trust strip |
+| Explore | Category chips, filter & sort bar, 2-column product grid with technique badges, stock overlay, prices |
+| Product Detail | Image carousel, certification badge, scarcity alert, variant selector, pricing with discount, specs bento grid, story accordion, delivery assurance, sticky Add to Bag CTA |
+| Cart | Reservation timer, item cards with qty stepper, scarcity warnings, heritage certification box, bill details, sticky Proceed to Checkout |
+| Checkout — Address | Saved address list with radio select, add new address button |
+| Checkout — Add Address | Form: name, phone, line1, line2, landmark, city, district, state (default Odisha), PIN code, label (Home/Office), default toggle |
+| Checkout — Review | Address summary, items list, payment mode (COD/UPI), price breakdown, Place Order CTA |
+| Order Success | Animated checkmark, order number (SAJ-XXXXXXXX), estimated delivery, View Order + Continue Shopping buttons |
+
+**Post-Purchase (2 screens)**
+
+| Screen | P0 Features |
+|---|---|
+| Orders List | Order cards with number, date, amount, color-coded status badge (Placed/Confirmed/Shipped/Delivered/Cancelled), empty state |
+| Order Detail | Status timeline stepper, tracking ID (when shipped), snapshotted items & address, payment info, WhatsApp support, cancel button (if placed) |
+
+**Profile & Addresses (3 screens)**
+
+| Screen | P0 Features |
+|---|---|
+| Profile | Avatar with initial, name, phone, email, menu (Edit Name, My Addresses, Order History, Help & Support), logout |
+| My Addresses | Address cards with label/default badges, edit/delete, Add New Address button |
+| Search Results | Search bar, result count, active filter pills, product grid, empty state |
+
+**Total: 21 screens**
 
 ### 3.2 Backend API (`apps/api`)
 

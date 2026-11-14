@@ -1,0 +1,178 @@
+.layout { display: flex; min-height: 100vh; }
+.main { flex: 1; display: flex; flex-direction: column; }
+
+.header {
+  background: var(--white);
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header h2 { font-size: 1.25rem; font-weight: 600; }
+
+.searchBox input {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  width: 280px;
+}
+.searchBox input:focus { outline: none; border-color: var(--maroon); }
+
+.toolbar {
+  padding: 0.75rem 2rem;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+.filterGroup { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.filterBtn, .filterActive {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  background: var(--white);
+  cursor: pointer;
+  color: var(--grey);
+}
+.filterActive {
+  background: var(--maroon);
+  color: white;
+  border-color: var(--maroon);
+  font-weight: 600;
+}
+
+.content { padding: 1.5rem 2rem; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--white);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.table th {
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--grey);
+  border-bottom: 1px solid var(--border);
+  background: #fafafa;
+}
+.table td {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.mono { font-family: monospace; font-weight: 600; font-size: 0.8rem; }
+.phone { font-size: 0.75rem; color: var(--grey); }
+.date { color: var(--grey); font-size: 0.8rem; }
+.price { font-family: monospace; font-weight: 500; }
+
+.payBadge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: #f5f5f5;
+  color: var(--charcoal);
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.status_placed { background: #e3f2fd; color: #1565c0; }
+.status_confirmed { background: #fff8e1; color: #f57f17; }
+.status_packed { background: #fff3e0; color: #e65100; }
+.status_shipped { background: #fff3e0; color: #e65100; }
+.status_delivered { background: #e8f5e9; color: #2e7d32; }
+.status_cancelled { background: #fce4ec; color: #c62828; }
+
+.actionBtn {
+  padding: 0.3rem 0.75rem;
+  background: var(--maroon);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.actionBtn:disabled { opacity: 0.5; }
+.actionBtn:hover { opacity: 0.9; }
+
+.empty {
+  text-align: center;
+  padding: 3rem 1rem !important;
+  color: var(--grey);
+}
+
+/* Ship Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 400px;
+  max-width: 90vw;
+}
+.modal h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+.modalField { margin-bottom: 0.75rem; }
+.modalField label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--grey);
+  margin-bottom: 0.3rem;
+}
+.modalField input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.88rem;
+}
+.modalField input:focus { outline: none; border-color: var(--maroon); }
+.modalActions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+.cancelModalBtn {
+  padding: 0.5rem 1rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.confirmBtn {
+  padding: 0.5rem 1.5rem;
+  background: var(--maroon);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.confirmBtn:disabled { opacity: 0.5; }

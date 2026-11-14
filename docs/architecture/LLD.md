@@ -1503,3 +1503,89 @@ class GlobalExceptionFilter implements ExceptionFilter {
 ```
 
 Note: Circular dependencies between Orders ↔ Payments resolved using `forwardRef()` or by extracting shared logic into a separate service.
+
+---
+
+## 6. Mobile App Screen Architecture
+
+**Total: 21 screens** organized into 5 groups.
+
+### 6.1 Onboarding & System States
+
+| Screen | Component | Notes |
+|---|---|---|
+| Splash | `SplashScreen` | Logo + auto-transition, no user interaction |
+| Welcome | `WelcomeScreen` | 2-3 swipeable pages, skip link, shown only on first launch (AsyncStorage flag) |
+| No Internet | `NoInternetScreen` | Shown when network unavailable, retry button re-checks connectivity |
+| App Update Required | `ForceUpdateScreen` | Non-dismissable, compare app version vs minimum from API/remote config |
+| Maintenance | `MaintenanceScreen` | Shown when API returns 503, informational only |
+
+### 6.2 Authentication
+
+| Screen | Component | Route | Notes |
+|---|---|---|---|
+| Phone Input | `LoginPhoneScreen` | Profile tab (unauthenticated) | +91 prefix, validates 10-digit Indian mobile |
+| OTP Verify | `LoginOtpScreen` | After phone submit | 6-digit input, 30s resend cooldown, max 5 attempts |
+| Name Capture | `NameCaptureScreen` | After first OTP verify | Shown when `isNewUser=true` or `name=null`, skip option |
+
+### 6.3 Core Shopping Flow
+
+| Screen | Component | Route | Data Source |
+|---|---|---|---|
+| Home | `HomeScreen` | Tab: Home | `GET /products` (new arrivals), static collections |
+| Explore | `ExploreScreen` | Tab: Explore | `GET /products` + `GET /categories` |
+| Product Detail | `ProductDetailScreen` | Stack: Explore → Detail | `GET /products/:slug` |
+| Cart | `CartScreen` | Tab: Cart | `GET /cart` (authenticated) |
+| Select Address | `SelectAddressScreen` | Stack: Cart → Checkout | `GET /me/addresses` |
+| Add Address | `AddAddressScreen` | Stack: Checkout → Add | `POST /me/addresses` |
+| Order Review | `OrderReviewScreen` | Stack: Checkout → Review | `POST /checkout/quote` |
+| Order Success | `OrderSuccessScreen` | Stack: after place order | `POST /checkout/place` response |
+
+### 6.4 Post-Purchase
+
+| Screen | Component | Route | Data Source |
+|---|---|---|---|
+| Orders List | `OrdersScreen` | Tab: Orders | `GET /orders` (authenticated) |
+| Order Detail | `OrderDetailScreen` | Stack: Orders → Detail | `GET /orders/:id` |
+
+### 6.5 Profile & Addresses
+
+| Screen | Component | Route | Data Source |
+|---|---|---|---|
+| Profile | `ProfileScreen` | Tab: Profile | `GET /me` |
+| My Addresses | `AddressesScreen` | Stack: Profile → Addresses | `GET /me/addresses` |
+| Search Results | `SearchScreen` | Stack: Explore → Search | `GET /products?search=` |
+
+### 6.6 Navigation Structure
+
+```
+TabNavigator (5 tabs)
+├── Home (HomeScreen)
+├── Explore (ExploreStackNavigator)
+│   ├── ExploreList (ExploreScreen)
+│   ├── ProductDetail (ProductDetailScreen)
+│   └── Search (SearchScreen)
+├── Cart (CartStackNavigator)
+│   ├── CartView (CartScreen)
+│   ├── SelectAddress (SelectAddressScreen)
+│   ├── AddAddress (AddAddressScreen)
+│   ├── OrderReview (OrderReviewScreen)
+│   └── OrderSuccess (OrderSuccessScreen)
+├── Orders (OrdersStackNavigator)
+│   ├── OrdersList (OrdersScreen)
+│   └── OrderDetail (OrderDetailScreen)
+└── Profile (ProfileStackNavigator)
+    ├── ProfileView (ProfileScreen)
+    ├── Addresses (AddressesScreen)
+    └── AddAddress (AddAddressScreen)
+```
+
+### 6.7 System Screen Triggers
+
+| Screen | Trigger |
+|---|---|
+| Splash | App cold start, shown for 1-2s |
+| Welcome | First launch only (`@sajani/onboarded` not in AsyncStorage) |
+| No Internet | `NetInfo` listener detects offline state |
+| Force Update | API response header `X-Min-App-Version` > current app version |
+| Maintenance | API returns HTTP 503 with `maintenance: true` |

@@ -104,3 +104,41 @@
   font-weight: 700;
   color: var(--charcoal);
 }
+
+.loading { padding: 2rem; text-align: center; }
+
+.recentSection { margin-top: 2rem; }
+.recentSection h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; }
+
+.recentTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--white);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.recentTable th {
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--grey);
+  border-bottom: 1px solid var(--border);
+  background: #fafafa;
+}
+.recentTable td {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+.mono { font-family: monospace; font-weight: 600; font-size: 0.8rem; }
+
+.status_placed { color: #1565c0; }
+.status_confirmed { color: #f57f17; }
+.status_packed, .status_shipped { color: #e65100; }
+.status_delivered { color: #2e7d32; }
+.status_cancelled { color: #c62828; }
+.statusDefault { color: var(--grey); }

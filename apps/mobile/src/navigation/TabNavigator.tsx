@@ -8,39 +8,54 @@ import HomeScreen from '../screens/HomeScreen';
 import ExploreScreen from '../screens/ExploreScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import CartScreen from '../screens/CartScreen';
+import SelectAddressScreen from '../screens/SelectAddressScreen';
+import AddAddressScreen from '../screens/AddAddressScreen';
+import OrderReviewScreen from '../screens/OrderReviewScreen';
+import OrderSuccessScreen from '../screens/OrderSuccessScreen';
 import OrdersScreen from '../screens/OrdersScreen';
+import OrderDetailScreen from '../screens/OrderDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const ExploreStack = createNativeStackNavigator();
+const CartStack = createNativeStackNavigator();
+const OrdersStack = createNativeStackNavigator();
 
-// Explore tab has its own stack: Explore → ProductDetail
+const stackHeaderStyle = {
+  headerStyle: { backgroundColor: colors.surface },
+  headerTintColor: colors.primary,
+  headerTitleStyle: { fontWeight: '600', fontSize: 16 },
+  headerShadowVisible: false,
+  headerBackTitle: 'Back',
+};
+
 function ExploreStackScreen() {
   return (
-    <ExploreStack.Navigator>
-      <ExploreStack.Screen
-        name="ExploreList"
-        component={ExploreScreen}
-        options={{ headerShown: false }}
-      />
-      <ExploreStack.Screen
-        name="ProductDetail"
-        component={ProductDetailScreen}
-        options={{
-          headerTitle: 'Product Details',
-          headerStyle: {
-            backgroundColor: colors.surface,
-          },
-          headerTintColor: colors.primary,
-          headerTitleStyle: {
-            fontWeight: '600',
-            fontSize: 16,
-          },
-          headerShadowVisible: false,
-          headerBackTitle: 'Back',
-        }}
-      />
+    <ExploreStack.Navigator screenOptions={stackHeaderStyle}>
+      <ExploreStack.Screen name="ExploreList" component={ExploreScreen} options={{ headerShown: false }} />
+      <ExploreStack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerTitle: 'Product Details' }} />
     </ExploreStack.Navigator>
+  );
+}
+
+function CartStackScreen() {
+  return (
+    <CartStack.Navigator screenOptions={stackHeaderStyle}>
+      <CartStack.Screen name="CartView" component={CartScreen} options={{ headerShown: false }} />
+      <CartStack.Screen name="SelectAddress" component={SelectAddressScreen} options={{ headerTitle: 'Delivery Address' }} />
+      <CartStack.Screen name="AddAddress" component={AddAddressScreen} options={{ headerTitle: 'Add Address' }} />
+      <CartStack.Screen name="OrderReview" component={OrderReviewScreen} options={{ headerTitle: 'Review Order' }} />
+      <CartStack.Screen name="OrderSuccess" component={OrderSuccessScreen} options={{ headerShown: false }} />
+    </CartStack.Navigator>
+  );
+}
+
+function OrdersStackScreen() {
+  return (
+    <OrdersStack.Navigator screenOptions={stackHeaderStyle}>
+      <OrdersStack.Screen name="OrdersList" component={OrdersScreen} options={{ headerShown: false }} />
+      <OrdersStack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ headerTitle: 'Order Details' }} />
+    </OrdersStack.Navigator>
   );
 }
 
@@ -86,13 +101,9 @@ export default function TabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerTitle: 'Sajani' }} />
-      <Tab.Screen
-        name="Explore"
-        component={ExploreStackScreen}
-        options={{ headerShown: false }}
-      />
-      <Tab.Screen name="Cart" component={CartScreen} />
-      <Tab.Screen name="Orders" component={OrdersScreen} />
+      <Tab.Screen name="Explore" component={ExploreStackScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Cart" component={CartStackScreen} options={{ headerShown: false, headerTitle: 'Shopping Bag' }} />
+      <Tab.Screen name="Orders" component={OrdersStackScreen} options={{ headerShown: false, headerTitle: 'My Orders' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

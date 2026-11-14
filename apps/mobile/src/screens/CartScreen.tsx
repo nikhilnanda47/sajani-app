@@ -184,7 +184,7 @@ export default function CartScreen() {
 
       {/* Sticky Checkout Bar */}
       <View style={styles.checkoutBar}>
-        <TouchableOpacity style={styles.checkoutBtn} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.checkoutBtn} activeOpacity={0.85} onPress={() => navigation.navigate('SelectAddress')}>
           <Text style={styles.checkoutBtnText}>PROCEED TO CHECKOUT</Text>
           <Text style={styles.checkoutPrice}>{formatPaise(cart.subtotalPaise)} →</Text>
         </TouchableOpacity>

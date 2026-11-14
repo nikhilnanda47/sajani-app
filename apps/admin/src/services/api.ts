@@ -118,6 +118,21 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // ── Orders ──
+  async getOrders(params?: Record<string, string>) {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return this.request<{ items: any[]; cursor: string | null; hasMore: boolean }>(
+      `/api/v1/admin/orders${query}`,
+    );
+  }
+
+  async updateOrderStatus(id: string, data: { status: string; trackingId?: string; courierName?: string }) {
+    return this.request(`/api/v1/admin/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export class ApiError extends Error {
